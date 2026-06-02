@@ -12,7 +12,7 @@
     "format": "prettier --check src/",
     "format:fix": "prettier --write src/",
     "fix": "run-s format:fix lint:fix",
-    "prepublish": "run-s format lint build"
+    "prepublish": "run-s format lint test build"
   },
   "keywords": [
     "github-action",

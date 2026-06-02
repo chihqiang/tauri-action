@@ -1,6 +1,6 @@
 import { exec } from '@actions/exec';
 import { existsSync, readFileSync, readdirSync, renameSync } from 'fs';
-import { join, resolve } from 'path';
+import { dirname, join, resolve } from 'path';
 import { Logger } from './log';
 import { ARCH, EXT, Target } from './target';
 
@@ -129,6 +129,8 @@ export class Builder {
     const macosDir = join(bundleDir, 'macos');
     await Builder.collectMacosArtifacts(macosDir, target, privateKey, runner, root, env, artifacts);
 
+    await Builder.collectSignatures(bundleDir, artifacts, privateKey, runner, root, env);
+
     Logger.endGroup();
 
     Logger.success(`Collected ${artifacts.length} artifact(s) total`);
@@ -223,6 +225,45 @@ export class Builder {
     }
   }
 
+  private static async collectSignatures(
+    bundleDir: string,
+    artifacts: BundleArtifact[],
+    privateKey: string,
+    runner: string,
+    root: string,
+    env: Record<string, string>,
+  ): Promise<void> {
+    const subdirs = ['msi', 'nsis', 'appimage', 'deb'];
+    for (const sub of subdirs) {
+      const dir = join(bundleDir, sub);
+      if (!existsSync(dir)) continue;
+      for (const f of readdirSync(dir)) {
+        if (!f.endsWith(EXT.SIG)) continue;
+        if (artifacts.some((a) => a.path === join(dir, f))) continue;
+        artifacts.push({ path: join(dir, f), name: f, type: 'signature' });
+        Logger.info(`  → signature: ${f}`);
+      }
+    }
+
+    if (!privateKey) return;
+
+    for (const a of artifacts) {
+      if (a.type !== 'installer' && a.type !== 'dmg') continue;
+      const sigName = `${a.name}${EXT.SIG}`;
+      const sigDir = dirname(a.path);
+      if (!existsSync(join(sigDir, sigName)) && !artifacts.some((s) => s.name === sigName)) {
+        Logger.info(`Missing ${EXT.SIG} for ${a.name}, generating...`);
+        Logger.step('Signing installer');
+        const ok = await Builder.signArchive(a.path, runner, root, env);
+        Logger.endGroup();
+        if (ok) {
+          artifacts.push({ path: join(sigDir, sigName), name: sigName, type: 'signature' });
+          Logger.info(`  → signature: ${sigName}`);
+        }
+      }
+    }
+  }
+
   private static async signArchive(
     filePath: string,
     runner: string,
@@ -244,7 +285,7 @@ export class Builder {
     }
   }
 
-  private static findRunner(root: string): string {
+  static findRunner(root: string): string {
     if (existsSync(join(root, 'pnpm-lock.yaml'))) return 'pnpm';
     if (existsSync(join(root, 'yarn.lock'))) return 'yarn';
     if (existsSync(join(root, 'bun.lockb'))) return 'bun';

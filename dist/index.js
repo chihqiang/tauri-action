@@ -24162,6 +24162,7 @@ var Builder = class _Builder {
     }
     const macosDir = (0, import_path.join)(bundleDir, "macos");
     await _Builder.collectMacosArtifacts(macosDir, target, privateKey, runner, root, env, artifacts);
+    await _Builder.collectSignatures(bundleDir, artifacts, privateKey, runner, root, env);
     Logger.endGroup();
     Logger.success(`Collected ${artifacts.length} artifact(s) total`);
     return { artifacts, appVersion };
@@ -24237,6 +24238,35 @@ var Builder = class _Builder {
               Logger.info(`  \u2192 signature: ${sigName}`);
             }
           }
+        }
+      }
+    }
+  }
+  static async collectSignatures(bundleDir, artifacts, privateKey, runner, root, env) {
+    const subdirs = ["msi", "nsis", "appimage", "deb"];
+    for (const sub of subdirs) {
+      const dir = (0, import_path.join)(bundleDir, sub);
+      if (!(0, import_fs.existsSync)(dir)) continue;
+      for (const f of (0, import_fs.readdirSync)(dir)) {
+        if (!f.endsWith(EXT.SIG)) continue;
+        if (artifacts.some((a) => a.path === (0, import_path.join)(dir, f))) continue;
+        artifacts.push({ path: (0, import_path.join)(dir, f), name: f, type: "signature" });
+        Logger.info(`  \u2192 signature: ${f}`);
+      }
+    }
+    if (!privateKey) return;
+    for (const a of artifacts) {
+      if (a.type !== "installer" && a.type !== "dmg") continue;
+      const sigName = `${a.name}${EXT.SIG}`;
+      const sigDir = (0, import_path.dirname)(a.path);
+      if (!(0, import_fs.existsSync)((0, import_path.join)(sigDir, sigName)) && !artifacts.some((s) => s.name === sigName)) {
+        Logger.info(`Missing ${EXT.SIG} for ${a.name}, generating...`);
+        Logger.step("Signing installer");
+        const ok = await _Builder.signArchive(a.path, runner, root, env);
+        Logger.endGroup();
+        if (ok) {
+          artifacts.push({ path: (0, import_path.join)(sigDir, sigName), name: sigName, type: "signature" });
+          Logger.info(`  \u2192 signature: ${sigName}`);
         }
       }
     }
@@ -24611,7 +24641,6 @@ async function main() {
     Logger.info(`Repo: ${config.repo}`);
     Logger.info(`Target: ${config.target || "(not set \u2014 only needed for build)"}`);
     if (command === "generate-updater") {
-      config.validate();
       Logger.step("Generate updater command");
       await new Workflow().runGenerateUpdater(config);
       Logger.endGroup();

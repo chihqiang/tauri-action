@@ -14,7 +14,6 @@ async function main(): Promise<void> {
     Logger.info(`Target: ${config.target || '(not set — only needed for build)'}`);
 
     if (command === 'generate-updater') {
-      config.validate();
       Logger.step('Generate updater command');
       await new Workflow().runGenerateUpdater(config);
       Logger.endGroup();

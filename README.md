@@ -44,7 +44,7 @@ permissions:
 
 ## Complete Workflow Example
 
-Build for macOS ARM + Intel, then generate `updater.json` with both platforms:
+Build for macOS ARM, Windows x64, and Linux x64, then generate `updater.json` with all platforms:
 
 ```yaml
 name: publish
@@ -61,14 +61,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - aarch64-apple-darwin
-          - x86_64-apple-darwin
-    runs-on: macos-latest
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -79,7 +87,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      
+
       - name: Install frontend dependencies
         run: npm install
 
@@ -89,7 +97,6 @@ jobs:
           command: build
           target: ${{ matrix.target }}
           privateKey: ${{ secrets.TAURI_PRIVATE_KEY }}
-          tag: ${{ github.ref_name }}
 
   finalize:
     needs: build
@@ -99,7 +106,6 @@ jobs:
         uses: chihqiang/tauri-action@main
         with:
           command: generate-updater
-          tag: ${{ github.ref_name }}
 ```
 
 ## Usage
