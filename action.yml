@@ -1,0 +1,56 @@
+name: 'Tauri Release Action'
+description: 'Build, sign, and publish Tauri v2 apps — sign bundles, generate updater JSON, upload to GitHub Releases'
+author: 'chihqiang'
+inputs:
+  command:
+    description: 'Command to run: build (default) or generate-updater'
+    default: 'build'
+    required: false
+  token:
+    description: 'GitHub token with contents:write permission'
+    default: ${{ github.token }}
+    required: false
+  tag:
+    description: 'Release tag name (defaults to github.ref_name)'
+    required: false
+  repo:
+    description: 'Target repository in owner/repo format (defaults to current repository)'
+    required: false
+  target:
+    description: 'Rust target triple, e.g. aarch64-apple-darwin, x86_64-pc-windows-msvc'
+    required: true
+  privateKey:
+    description: 'Tauri signing private key (set via secrets.TAURI_PRIVATE_KEY)'
+    required: false
+  releaseBody:
+    description: 'Release description body (leave empty to auto-generate)'
+    required: false
+  projectPath:
+    description: 'Path to the Tauri project root (containing src-tauri/)'
+    default: '.'
+    required: false
+  args:
+    description: 'Additional arguments for the tauri build command'
+    required: false
+
+outputs:
+  releaseId:
+    description: 'Release ID'
+  version:
+    description: 'App version from the built artifact'
+  platform:
+    description: 'Updater platform key, e.g. darwin-aarch64'
+  signature:
+    description: 'Base64 signature from .sig file for updater.json'
+  downloadUrl:
+    description: 'Download URL of the archive/installer for updater.json'
+  archiveName:
+    description: 'Filename of the archive/installer'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+
+branding:
+  icon: 'box'
+  color: 'blue'
