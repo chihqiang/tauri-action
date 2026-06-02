@@ -1,8 +1,7 @@
-import * as core from '@actions/core';
 import { GitHub } from '@actions/github/lib/utils';
 import { existsSync, readFileSync } from 'fs';
 import { basename } from 'path';
-import { info, warning, error, success, step, endGroup } from './log';
+import { Logger } from './log';
 
 export interface Asset {
   name: string;
@@ -16,12 +15,7 @@ export class Release {
   private tag: string;
   private releaseId: number | null = null;
 
-  constructor(
-    octokit: InstanceType<typeof GitHub>,
-    owner: string,
-    repoName: string,
-    tag: string,
-  ) {
+  constructor(octokit: InstanceType<typeof GitHub>, owner: string, repoName: string, tag: string) {
     this.octokit = octokit;
     this.owner = owner;
     this.repoName = repoName;
@@ -29,17 +23,22 @@ export class Release {
   }
 
   async ensureRelease(body: string): Promise<number> {
-    // Check if release already exists
+    Logger.info('Checking if release already exists...');
     const existingId = await this.getReleaseByTag();
     if (existingId) {
       this.releaseId = existingId;
-      success(`Found existing release ID: ${this.releaseId}`);
+      Logger.info(`Found existing release ID: ${this.releaseId}`);
       return this.releaseId;
     }
 
-    // Create release
-    step(`Creating release "${this.tag}"`);
-    const releaseBody = body || await this.generateReleaseNotes();
+    Logger.info('Release not found — creating new one');
+    const releaseBody = body || (await this.generateReleaseNotes());
+    if (body) {
+      Logger.info('Using provided release body');
+    } else {
+      Logger.info('Using auto-generated release notes');
+    }
+
     const response = await this.octokit.rest.repos.createRelease({
       owner: this.owner,
       repo: this.repoName,
@@ -50,8 +49,7 @@ export class Release {
       prerelease: false,
     });
     this.releaseId = response.data.id;
-    endGroup();
-    success(`Created release ID: ${this.releaseId}`);
+    Logger.success(`Created release ID: ${this.releaseId}`);
     return this.releaseId;
   }
 
@@ -60,21 +58,23 @@ export class Release {
       throw new Error('Release not ensured. Call ensureRelease() first.');
     }
 
-    const results = await Promise.allSettled(
-      filePaths.map(file => this.uploadAsset(file)),
-    );
+    Logger.info(`Uploading ${filePaths.length} file(s) to release ${this.releaseId}...`);
+    const results = await Promise.allSettled(filePaths.map((file) => this.uploadAsset(file)));
 
-    const failed = results.filter(r => r.status === 'rejected');
+    const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected');
+
+    Logger.info(`Uploaded: ${succeeded}, Failed: ${failed.length}`);
+
     if (failed.length > 0) {
-      for (const f of failed) {
+      const messages = failed.map((f) => {
         const reason = (f as PromiseRejectedResult).reason;
-        error(`Upload failed: ${reason?.message || reason}`);
-      }
-      core.setFailed(`${failed.length} file(s) failed to upload`);
-      return [];
+        return reason?.message || String(reason);
+      });
+      throw new Error(`Upload failed for ${failed.length} file(s): ${messages.join('; ')}`);
     }
 
-    return (results as PromiseFulfilledResult<Asset>[]).map(r => r.value);
+    return (results as PromiseFulfilledResult<Asset>[]).map((r) => r.value);
   }
 
   private async getReleaseByTag(): Promise<number | null> {
@@ -84,25 +84,30 @@ export class Release {
         repo: this.repoName,
         tag: this.tag,
       });
+      Logger.info(`Release found: ID ${response.data.id}`);
       return response.data.id;
     } catch (err: unknown) {
       const httpError = err as { status?: number };
-      if (httpError.status !== 404) {
-        throw new Error(`Failed to check release: ${(err as Error)?.message || err}`);
+      if (httpError.status === 404) {
+        Logger.info('No existing release found (404)');
+        return null;
       }
-      return null;
+      throw new Error(`Failed to check release: ${(err as Error)?.message || err}`, { cause: err });
     }
   }
 
   private async generateReleaseNotes(): Promise<string> {
     try {
+      Logger.info('Generating release notes...');
       const notes = await this.octokit.rest.repos.generateReleaseNotes({
         owner: this.owner,
         repo: this.repoName,
         tag_name: this.tag,
       });
+      Logger.info('Release notes generated');
       return notes.data.body;
     } catch {
+      Logger.info('Could not generate release notes — using empty body');
       return '';
     }
   }
@@ -113,9 +118,9 @@ export class Release {
     }
 
     const name = basename(filePath);
-    step(`Uploading: ${name}`);
+    Logger.info(`Uploading: ${name}`);
+    Logger.info(`  File size: ${readFileSync(filePath).length} bytes`);
 
-    // Delete existing asset with same name
     const assetsResponse = await this.octokit.rest.repos.listReleaseAssets({
       owner: this.owner,
       repo: this.repoName,
@@ -123,17 +128,17 @@ export class Release {
       per_page: 100,
     });
 
-    const existing = assetsResponse.data.find(a => a.name === name);
+    const existing = assetsResponse.data.find((a) => a.name === name);
     if (existing) {
+      Logger.info(`  Duplicate found — deleting existing asset: ${name}`);
       await this.octokit.rest.repos.deleteReleaseAsset({
         owner: this.owner,
         repo: this.repoName,
         asset_id: existing.id,
       });
-      info(`Deleted existing asset: ${name}`);
+      Logger.info('  Deleted');
     }
 
-    // Upload
     const content = readFileSync(filePath);
     const response = await this.withRetry(() =>
       this.octokit.rest.repos.uploadReleaseAsset({
@@ -150,8 +155,7 @@ export class Release {
     );
 
     const asset = response.data as unknown as Asset;
-    success(`Uploaded: ${name} → ${asset.browser_download_url}`);
-    endGroup();
+    Logger.success(`Uploaded: ${name} → ${asset.browser_download_url}`);
     return asset;
   }
 
@@ -162,9 +166,11 @@ export class Release {
         return await fn();
       } catch (err) {
         lastError = err;
-        warning(`Attempt ${attempt}/${maxRetries} failed: ${(err as Error)?.message || err}`);
+        Logger.warning(`Upload attempt ${attempt}/${maxRetries} failed: ${(err as Error).message}`);
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
+          const delay = Math.pow(2, attempt - 1) * 1000;
+          Logger.info(`  Retrying in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }

@@ -1,14 +1,12 @@
 import { exec } from '@actions/exec';
 import { existsSync, readFileSync, readdirSync, renameSync } from 'fs';
 import { join, resolve } from 'path';
-import { info, warning, step, endGroup, success } from './log';
+import { Logger } from './log';
+import { ARCH, EXT, Target } from './target';
 
 export interface BundleArtifact {
-  /** Absolute path to the file */
   path: string;
-  /** Upload filename (basename) */
   name: string;
-  /** Type of artifact */
   type: 'dmg' | 'archive' | 'signature' | 'installer' | 'updater-json';
 }
 
@@ -17,222 +15,239 @@ export interface BuildResult {
   appVersion: string;
 }
 
-const TARGET_MAP: Record<string, string> = {
-  'aarch64-apple-darwin': 'darwin-aarch64',
-  'x86_64-apple-darwin': 'darwin-x86_64',
-  'x86_64-pc-windows-msvc': 'windows-x86_64',
-  'x86_64-unknown-linux-gnu': 'linux-x86_64',
-  'aarch64-unknown-linux-gnu': 'linux-aarch64',
-};
-
-function archSuffix(target: string): string {
-  if (target.includes('aarch64')) return 'aarch64';
-  if (target.includes('x86_64')) return 'x86_64';
-  return '';
-}
-
-export function targetToPlatform(target: string): string {
-  const platform = TARGET_MAP[target];
-  if (!platform) {
-    throw new Error(`Unknown target: ${target}`);
-  }
-  return platform;
-}
-
-function findRunner(root: string): string {
-  // Try to detect the package manager
-  if (existsSync(join(root, 'pnpm-lock.yaml'))) return 'pnpm';
-  if (existsSync(join(root, 'yarn.lock'))) return 'yarn';
-  if (existsSync(join(root, 'bun.lockb'))) return 'bun';
-  return 'npm';
-}
-
-export async function buildTauri(
-  projectPath: string,
-  target: string,
-  privateKey: string,
-  extraArgs: string,
-): Promise<BuildResult> {
-  const root = resolve(projectPath);
-  if (!existsSync(join(root, 'src-tauri'))) {
-    throw new Error(`No src-tauri directory found in ${root}`);
+export class Builder {
+  static readSignature(sigPath: string): string {
+    return readFileSync(sigPath, 'utf-8').trim();
   }
 
-  // Set up environment for signing
-  const env: Record<string, string> = { ...process.env } as Record<string, string>;
-  if (privateKey) {
-    env['TAURI_PRIVATE_KEY'] = privateKey;
-    env['TAURI_SIGNING_PRIVATE_KEY'] = privateKey;
-    env['TAURI_SIGNING_PRIVATE_KEY_PASSWORD'] = process.env.TAURI_PRIVATE_KEY_PASSWORD || '';
-  }
-
-  // Build
-  const runner = findRunner(root);
-  const cmd = runner === 'npm' ? 'npx' : runner;
-  const execArgs = ['tauri', 'build', '--target', target];
-  if (extraArgs) {
-    execArgs.push(...extraArgs.split(/\s+/).filter(Boolean));
-  }
-
-  step(`Running: ${cmd} ${execArgs.join(' ')}`);
-  const exitCode = await exec(cmd, execArgs, { cwd: root, env });
-  endGroup();
-
-  if (exitCode !== 0) {
-    throw new Error(`Tauri build failed with exit code ${exitCode}`);
-  }
-
-  // Collect artifacts
-  const bundleDir = join(root, 'src-tauri', 'target', target, 'release', 'bundle');
-  if (!existsSync(bundleDir)) {
-    throw new Error(`Bundle directory not found: ${bundleDir}`);
-  }
-
-  // Read app version from tauri.conf.json
-  const tauriConfPath = join(root, 'src-tauri', 'tauri.conf.json');
-  const tauriConf = JSON.parse(readFileSync(tauriConfPath, 'utf-8'));
-  const appVersion = tauriConf.version || '';
-
-  const artifacts: BundleArtifact[] = [];
-  const platform = targetToPlatform(target);
-
-  // Collect DMG (macOS only)
-  const dmgDir = join(bundleDir, 'dmg');
-  if (existsSync(dmgDir)) {
-    const files = readdirSync(dmgDir).filter(f => f.endsWith('.dmg'));
-    for (const f of files) {
-      artifacts.push({ path: join(dmgDir, f), name: f, type: 'dmg' });
-    }
-  }
-
-  // Collect MSI (Windows only)
-  const msiDir = join(bundleDir, 'msi');
-  if (existsSync(msiDir)) {
-    const files = readdirSync(msiDir).filter(f => f.endsWith('.msi'));
-    for (const f of files) {
-      artifacts.push({ path: join(msiDir, f), name: f, type: 'installer' });
-    }
-  }
-
-  const nsisDir = join(bundleDir, 'nsis');
-  if (existsSync(nsisDir)) {
-    const files = readdirSync(nsisDir).filter(f => f.endsWith('.exe'));
-    for (const f of files) {
-      artifacts.push({ path: join(nsisDir, f), name: f, type: 'installer' });
-    }
-  }
-
-  // Collect appImage / deb (Linux only)
-  const appImageDir = join(bundleDir, 'appimage');
-  if (existsSync(appImageDir)) {
-    const files = readdirSync(appImageDir).filter(f => f.endsWith('.AppImage'));
-    for (const f of files) {
-      artifacts.push({ path: join(appImageDir, f), name: f, type: 'installer' });
-    }
-  }
-  const debDir = join(bundleDir, 'deb');
-  if (existsSync(debDir)) {
-    const files = readdirSync(debDir).filter(f => f.endsWith('.deb'));
-    for (const f of files) {
-      artifacts.push({ path: join(debDir, f), name: f, type: 'installer' });
-    }
-  }
-
-  // Collect tar.gz archives and .sig files (macOS updater)
-  const macosDir = join(bundleDir, 'macos');
-  if (existsSync(macosDir)) {
-    // Check if tar.gz already exists (generated by tauri build)
-    let hasTarGz = readdirSync(macosDir).some(f => f.endsWith('.tar.gz'));
-    if (!hasTarGz) {
-      // Create it manually
-      const appDir = readdirSync(macosDir).find(f => f.endsWith('.app'));
-      if (appDir) {
-        info(`Creating ${appDir}.tar.gz...`);
-        const tarPath = join(macosDir, `${appDir}.tar.gz`);
-        await exec('tar', ['czf', tarPath, '-C', macosDir, appDir], { cwd: macosDir });
-        hasTarGz = true;
-        // Generate .sig if private key provided
-        if (privateKey) {
-          await tryGenerateSignature(tarPath, runner, root, env);
-        }
-      }
+  static async run(
+    projectPath: string,
+    target: string,
+    privateKey: string,
+    extraArgs: string,
+  ): Promise<BuildResult> {
+    const root = resolve(projectPath);
+    Logger.info(`Resolved project root: ${root}`);
+    if (!existsSync(join(root, 'src-tauri'))) {
+      throw new Error(`No src-tauri directory found in ${root}`);
     }
 
-    if (hasTarGz) {
-      for (const f of readdirSync(macosDir)) {
-        if (f.endsWith('.tar.gz')) {
-          let name = f;
-          if (!name.includes('aarch64') && !name.includes('x86_64')) {
-            const suffix = archSuffix(target);
-            if (suffix) {
-              name = name.replace('.app.tar.gz', `_${suffix}.app.tar.gz`);
-              const oldPath = join(macosDir, f);
-              const newPath = join(macosDir, name);
-              renameSync(oldPath, newPath);
-              info(`Renamed archive: ${f} → ${name}`);
-            }
-          }
-          artifacts.push({ path: join(macosDir, name), name, type: 'archive' });
-        }
-        if (f.endsWith('.sig')) {
-          let name = f;
-          if (!name.includes('aarch64') && !name.includes('x86_64')) {
-            const suffix = archSuffix(target);
-            if (suffix) {
-              name = name.replace('.app.tar.gz.sig', `_${suffix}.app.tar.gz.sig`);
-              const oldPath = join(macosDir, f);
-              const newPath = join(macosDir, name);
-              renameSync(oldPath, newPath);
-              info(`Renamed sig: ${f} → ${name}`);
-            }
-          }
-          artifacts.push({ path: join(macosDir, name), name, type: 'signature' });
-        }
-      }
-      // Generate .sig for any archives still missing one
-      if (privateKey) {
-        for (const a of artifacts) {
-          if (a.type === 'archive') {
-            const sigName = `${a.name}.sig`;
-            if (!existsSync(join(macosDir, sigName))) {
-              const ok = await tryGenerateSignature(a.path, runner, root, env);
-              if (ok) {
-                artifacts.push({ path: join(macosDir, sigName), name: sigName, type: 'signature' });
-              }
-            }
-          }
-        }
-      }
+    const env: Record<string, string> = { ...process.env } as Record<string, string>;
+    if (privateKey) {
+      Logger.info('Private key provided — signing will be enabled');
+      env['TAURI_PRIVATE_KEY'] = privateKey;
+      env['TAURI_SIGNING_PRIVATE_KEY'] = privateKey;
+      env['TAURI_SIGNING_PRIVATE_KEY_PASSWORD'] = process.env.TAURI_PRIVATE_KEY_PASSWORD || '';
+    } else {
+      Logger.info('No private key — skipping signing');
     }
-  }
 
-  success(`Collected ${artifacts.length} artifact(s)`);
-  return { artifacts, appVersion };
-}
-
-async function tryGenerateSignature(
-  filePath: string,
-  runner: string,
-  root: string,
-  env: Record<string, string>,
-): Promise<boolean> {
-  try {
+    const runner = Builder.findRunner(root);
+    Logger.info(`Detected package manager: ${runner}`);
     const cmd = runner === 'npm' ? 'npx' : runner;
-    const exitCode = await exec(cmd, ['tauri', 'signer', 'sign', filePath], { env, cwd: root });
-    if (exitCode !== 0) {
-      throw new Error(`tauri signer sign exited with code ${exitCode}`);
+    const execArgs = ['tauri', 'build', '--target', target];
+    if (extraArgs) {
+      const extra = extraArgs.split(/\s+/).filter(Boolean);
+      Logger.info(`Extra args: ${extra.join(' ')}`);
+      execArgs.push(...extra);
     }
-    info(`Generated signature: ${filePath}.sig`);
-    return true;
-  } catch (err) {
-    warning(`Failed to generate .sig: ${(err as Error).message}`);
-    return false;
+
+    Logger.step('Running tauri build');
+    Logger.info(`Command: ${cmd} ${execArgs.join(' ')}`);
+    const exitCode = await exec(cmd, execArgs, { cwd: root, env });
+    Logger.endGroup();
+
+    if (exitCode !== 0) {
+      throw new Error(`Tauri build failed with exit code ${exitCode}`);
+    }
+    Logger.info('Build completed successfully');
+
+    const bundleDir = join(root, 'src-tauri', 'target', target, 'release', 'bundle');
+    if (!existsSync(bundleDir)) {
+      throw new Error(`Bundle directory not found: ${bundleDir}`);
+    }
+    Logger.info(`Bundle directory: ${bundleDir}`);
+
+    const tauriConfPath = join(root, 'src-tauri', 'tauri.conf.json');
+    const tauriConf = JSON.parse(readFileSync(tauriConfPath, 'utf-8'));
+    const appVersion = tauriConf.version || '';
+    Logger.info(`App version: ${appVersion}`);
+
+    const artifacts: BundleArtifact[] = [];
+
+    Logger.step('Collecting artifacts');
+
+    const dmgDir = join(bundleDir, 'dmg');
+    if (existsSync(dmgDir)) {
+      const files = readdirSync(dmgDir).filter((f) => f.endsWith(EXT.DMG));
+      Logger.info(`Found ${files.length} DMG file(s) in ${dmgDir}`);
+      for (const f of files) {
+        artifacts.push({ path: join(dmgDir, f), name: f, type: 'dmg' });
+        Logger.info(`  → ${f}`);
+      }
+    }
+
+    const msiDir = join(bundleDir, 'msi');
+    if (existsSync(msiDir)) {
+      const files = readdirSync(msiDir).filter((f) => f.endsWith(EXT.MSI));
+      Logger.info(`Found ${files.length} MSI file(s)`);
+      for (const f of files) {
+        artifacts.push({ path: join(msiDir, f), name: f, type: 'installer' });
+        Logger.info(`  → ${f}`);
+      }
+    }
+
+    const nsisDir = join(bundleDir, 'nsis');
+    if (existsSync(nsisDir)) {
+      const files = readdirSync(nsisDir).filter((f) => f.endsWith(EXT.EXE));
+      Logger.info(`Found ${files.length} NSIS file(s)`);
+      for (const f of files) {
+        artifacts.push({ path: join(nsisDir, f), name: f, type: 'installer' });
+        Logger.info(`  → ${f}`);
+      }
+    }
+
+    const appImageDir = join(bundleDir, 'appimage');
+    if (existsSync(appImageDir)) {
+      const files = readdirSync(appImageDir).filter((f) => f.endsWith(EXT.APP_IMAGE));
+      Logger.info(`Found ${files.length} AppImage file(s)`);
+      for (const f of files) {
+        artifacts.push({ path: join(appImageDir, f), name: f, type: 'installer' });
+        Logger.info(`  → ${f}`);
+      }
+    }
+    const debDir = join(bundleDir, 'deb');
+    if (existsSync(debDir)) {
+      const files = readdirSync(debDir).filter((f) => f.endsWith(EXT.DEB));
+      Logger.info(`Found ${files.length} deb file(s)`);
+      for (const f of files) {
+        artifacts.push({ path: join(debDir, f), name: f, type: 'installer' });
+        Logger.info(`  → ${f}`);
+      }
+    }
+
+    const macosDir = join(bundleDir, 'macos');
+    await Builder.collectMacosArtifacts(macosDir, target, privateKey, runner, root, env, artifacts);
+
+    Logger.endGroup();
+
+    Logger.success(`Collected ${artifacts.length} artifact(s) total`);
+    return { artifacts, appVersion };
+  }
+
+  private static async collectMacosArtifacts(
+    macosDir: string,
+    target: string,
+    privateKey: string,
+    runner: string,
+    root: string,
+    env: Record<string, string>,
+    artifacts: BundleArtifact[],
+  ): Promise<void> {
+    if (!existsSync(macosDir)) {
+      Logger.info('macOS bundle directory not found — skipping');
+      return;
+    }
+
+    Logger.info('Processing macOS artifacts...');
+    let hasTarGz = readdirSync(macosDir).some((f) => f.endsWith(EXT.TAR_GZ));
+    if (!hasTarGz) {
+      const appDir = readdirSync(macosDir).find((f) => f.endsWith(EXT.APP));
+      if (appDir) {
+        Logger.info(`Creating ${appDir}${EXT.TAR_GZ}...`);
+        const tarPath = join(macosDir, `${appDir}${EXT.TAR_GZ}`);
+        await exec('tar', ['czf', tarPath, '-C', macosDir, appDir], { cwd: macosDir });
+        Logger.info('Archive created');
+        hasTarGz = true;
+        if (privateKey) {
+          Logger.step('Signing archive');
+          await Builder.signArchive(tarPath, runner, root, env);
+          Logger.endGroup();
+        }
+      }
+    }
+
+    if (!hasTarGz) {
+      Logger.info(`No ${EXT.APP} or ${EXT.TAR_GZ} found in macOS bundle — skip`);
+      return;
+    }
+
+    for (const f of readdirSync(macosDir)) {
+      if (f.endsWith(EXT.TAR_GZ)) {
+        let name = f;
+        if (!name.includes(ARCH.AARCH64) && !name.includes(ARCH.X86_64)) {
+          const suffix = Target.archSuffix(target);
+          if (suffix) {
+            name = name.replace(`${EXT.APP}${EXT.TAR_GZ}`, `_${suffix}${EXT.APP}${EXT.TAR_GZ}`);
+            renameSync(join(macosDir, f), join(macosDir, name));
+            Logger.info(`Renamed archive: ${f} → ${name}`);
+          }
+        }
+        artifacts.push({ path: join(macosDir, name), name, type: 'archive' });
+        Logger.info(`  → archive: ${name}`);
+      }
+      if (f.endsWith(EXT.SIG)) {
+        let name = f;
+        if (!name.includes(ARCH.AARCH64) && !name.includes(ARCH.X86_64)) {
+          const suffix = Target.archSuffix(target);
+          if (suffix) {
+            name = name.replace(
+              `${EXT.APP}${EXT.TAR_GZ}${EXT.SIG}`,
+              `_${suffix}${EXT.APP}${EXT.TAR_GZ}${EXT.SIG}`,
+            );
+            renameSync(join(macosDir, f), join(macosDir, name));
+            Logger.info(`Renamed sig: ${f} → ${name}`);
+          }
+        }
+        artifacts.push({ path: join(macosDir, name), name, type: 'signature' });
+        Logger.info(`  → signature: ${name}`);
+      }
+    }
+
+    if (privateKey) {
+      for (const a of artifacts) {
+        if (a.type === 'archive') {
+          const sigName = `${a.name}${EXT.SIG}`;
+          if (!existsSync(join(macosDir, sigName))) {
+            Logger.info(`Missing .sig for ${a.name}, generating...`);
+            Logger.step('Signing archive');
+            const ok = await Builder.signArchive(a.path, runner, root, env);
+            Logger.endGroup();
+            if (ok) {
+              artifacts.push({ path: join(macosDir, sigName), name: sigName, type: 'signature' });
+              Logger.info(`  → signature: ${sigName}`);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private static async signArchive(
+    filePath: string,
+    runner: string,
+    root: string,
+    env: Record<string, string>,
+  ): Promise<boolean> {
+    try {
+      const cmd = runner === 'npm' ? 'npx' : runner;
+      Logger.info(`Signing: ${filePath}`);
+      const exitCode = await exec(cmd, ['tauri', 'signer', 'sign', filePath], { env, cwd: root });
+      if (exitCode !== 0) {
+        throw new Error(`tauri signer sign exited with code ${exitCode}`);
+      }
+      Logger.info(`Generated signature: ${filePath}${EXT.SIG}`);
+      return true;
+    } catch (err) {
+      Logger.warning(`Failed to generate .sig: ${(err as Error).message}`);
+      return false;
+    }
+  }
+
+  private static findRunner(root: string): string {
+    if (existsSync(join(root, 'pnpm-lock.yaml'))) return 'pnpm';
+    if (existsSync(join(root, 'yarn.lock'))) return 'yarn';
+    if (existsSync(join(root, 'bun.lockb'))) return 'bun';
+    return 'npm';
   }
 }
-
-export function readSignature(sigPath: string): string {
-  const content = readFileSync(sigPath, 'utf-8').trim();
-  return content;
-}
-
-

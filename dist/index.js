@@ -426,18 +426,18 @@ var require_tunnel = __commonJS({
             res.statusCode
           );
           socket.destroy();
-          var error3 = new Error("tunneling socket could not be established, statusCode=" + res.statusCode);
-          error3.code = "ECONNRESET";
-          options.request.emit("error", error3);
+          var error2 = new Error("tunneling socket could not be established, statusCode=" + res.statusCode);
+          error2.code = "ECONNRESET";
+          options.request.emit("error", error2);
           self.removeSocket(placeholder);
           return;
         }
         if (head.length > 0) {
           debug("got illegal response body from proxy");
           socket.destroy();
-          var error3 = new Error("got illegal response body from proxy");
-          error3.code = "ECONNRESET";
-          options.request.emit("error", error3);
+          var error2 = new Error("got illegal response body from proxy");
+          error2.code = "ECONNRESET";
+          options.request.emit("error", error2);
           self.removeSocket(placeholder);
           return;
         }
@@ -452,9 +452,9 @@ var require_tunnel = __commonJS({
           cause.message,
           cause.stack
         );
-        var error3 = new Error("tunneling socket could not be established, cause=" + cause.message);
-        error3.code = "ECONNRESET";
-        options.request.emit("error", error3);
+        var error2 = new Error("tunneling socket could not be established, cause=" + cause.message);
+        error2.code = "ECONNRESET";
+        options.request.emit("error", error2);
         self.removeSocket(placeholder);
       }
     };
@@ -5585,7 +5585,7 @@ Content-Type: ${value.type || "application/octet-stream"}\r
         throw new TypeError("Body is unusable");
       }
       const promise = createDeferredPromise();
-      const errorSteps = (error3) => promise.reject(error3);
+      const errorSteps = (error2) => promise.reject(error2);
       const successSteps = (data) => {
         try {
           promise.resolve(convertBytesToJSValue(data));
@@ -5871,16 +5871,16 @@ var require_request = __commonJS({
           this.onError(err);
         }
       }
-      onError(error3) {
+      onError(error2) {
         this.onFinally();
         if (channels.error.hasSubscribers) {
-          channels.error.publish({ request: this, error: error3 });
+          channels.error.publish({ request: this, error: error2 });
         }
         if (this.aborted) {
           return;
         }
         this.aborted = true;
-        return this[kHandler].onError(error3);
+        return this[kHandler].onError(error2);
       }
       onFinally() {
         if (this.errorHandler) {
@@ -6743,8 +6743,8 @@ var require_RedirectHandler = __commonJS({
       onUpgrade(statusCode, headers, socket) {
         this.handler.onUpgrade(statusCode, headers, socket);
       }
-      onError(error3) {
-        this.handler.onError(error3);
+      onError(error2) {
+        this.handler.onError(error2);
       }
       onHeaders(statusCode, headers, resume, statusText) {
         this.location = this.history.length >= this.maxRedirections || util.isDisturbed(this.opts.body) ? null : parseLocation(statusCode, headers);
@@ -8888,7 +8888,7 @@ var require_pool = __commonJS({
         this[kOptions] = { ...util.deepClone(options), connect, allowH2 };
         this[kOptions].interceptors = options.interceptors ? { ...options.interceptors } : void 0;
         this[kFactory] = factory;
-        this.on("connectionError", (origin2, targets, error3) => {
+        this.on("connectionError", (origin2, targets, error2) => {
           for (const target of targets) {
             const idx = this[kClients].indexOf(target);
             if (idx !== -1) {
@@ -10499,13 +10499,13 @@ var require_mock_utils = __commonJS({
       if (mockDispatch2.data.callback) {
         mockDispatch2.data = { ...mockDispatch2.data, ...mockDispatch2.data.callback(opts) };
       }
-      const { data: { statusCode, data, headers, trailers, error: error3 }, delay, persist } = mockDispatch2;
+      const { data: { statusCode, data, headers, trailers, error: error2 }, delay, persist } = mockDispatch2;
       const { timesInvoked, times } = mockDispatch2;
       mockDispatch2.consumed = !persist && timesInvoked >= times;
       mockDispatch2.pending = timesInvoked < times;
-      if (error3 !== null) {
+      if (error2 !== null) {
         deleteMockDispatch(this[kDispatches], key);
-        handler2.onError(error3);
+        handler2.onError(error2);
         return true;
       }
       if (typeof delay === "number" && delay > 0) {
@@ -10543,19 +10543,19 @@ var require_mock_utils = __commonJS({
         if (agent.isMockActive) {
           try {
             mockDispatch.call(this, opts, handler2);
-          } catch (error3) {
-            if (error3 instanceof MockNotMatchedError) {
+          } catch (error2) {
+            if (error2 instanceof MockNotMatchedError) {
               const netConnect = agent[kGetNetConnect]();
               if (netConnect === false) {
-                throw new MockNotMatchedError(`${error3.message}: subsequent request to origin ${origin} was not allowed (net.connect disabled)`);
+                throw new MockNotMatchedError(`${error2.message}: subsequent request to origin ${origin} was not allowed (net.connect disabled)`);
               }
               if (checkNetConnect(netConnect, origin)) {
                 originalDispatch.call(this, opts, handler2);
               } else {
-                throw new MockNotMatchedError(`${error3.message}: subsequent request to origin ${origin} was not allowed (net.connect is not enabled for this origin)`);
+                throw new MockNotMatchedError(`${error2.message}: subsequent request to origin ${origin} was not allowed (net.connect is not enabled for this origin)`);
               }
             } else {
-              throw error3;
+              throw error2;
             }
           }
         } else {
@@ -10718,11 +10718,11 @@ var require_mock_interceptor = __commonJS({
       /**
        * Mock an undici request with a defined error.
        */
-      replyWithError(error3) {
-        if (typeof error3 === "undefined") {
+      replyWithError(error2) {
+        if (typeof error2 === "undefined") {
           throw new InvalidArgumentError("error must be defined");
         }
-        const newMockDispatch = addMockDispatch(this[kDispatches], this[kDispatchKey], { error: error3 });
+        const newMockDispatch = addMockDispatch(this[kDispatches], this[kDispatchKey], { error: error2 });
         return new MockScope(newMockDispatch);
       }
       /**
@@ -13050,17 +13050,17 @@ var require_fetch = __commonJS({
         this.emit("terminated", reason);
       }
       // https://fetch.spec.whatwg.org/#fetch-controller-abort
-      abort(error3) {
+      abort(error2) {
         if (this.state !== "ongoing") {
           return;
         }
         this.state = "aborted";
-        if (!error3) {
-          error3 = new DOMException2("The operation was aborted.", "AbortError");
+        if (!error2) {
+          error2 = new DOMException2("The operation was aborted.", "AbortError");
         }
-        this.serializedAbortReason = error3;
-        this.connection?.destroy(error3);
-        this.emit("terminated", error3);
+        this.serializedAbortReason = error2;
+        this.connection?.destroy(error2);
+        this.emit("terminated", error2);
       }
     };
     function fetch(input, init = {}) {
@@ -13164,13 +13164,13 @@ var require_fetch = __commonJS({
         performance.markResourceTiming(timingInfo, originalURL.href, initiatorType, globalThis2, cacheState);
       }
     }
-    function abortFetch(p, request2, responseObject, error3) {
-      if (!error3) {
-        error3 = new DOMException2("The operation was aborted.", "AbortError");
+    function abortFetch(p, request2, responseObject, error2) {
+      if (!error2) {
+        error2 = new DOMException2("The operation was aborted.", "AbortError");
       }
-      p.reject(error3);
+      p.reject(error2);
       if (request2.body != null && isReadable(request2.body?.stream)) {
-        request2.body.stream.cancel(error3).catch((err) => {
+        request2.body.stream.cancel(error2).catch((err) => {
           if (err.code === "ERR_INVALID_STATE") {
             return;
           }
@@ -13182,7 +13182,7 @@ var require_fetch = __commonJS({
       }
       const response = responseObject[kState];
       if (response.body != null && isReadable(response.body?.stream)) {
-        response.body.stream.cancel(error3).catch((err) => {
+        response.body.stream.cancel(error2).catch((err) => {
           if (err.code === "ERR_INVALID_STATE") {
             return;
           }
@@ -13962,13 +13962,13 @@ var require_fetch = __commonJS({
               fetchParams.controller.ended = true;
               this.body.push(null);
             },
-            onError(error3) {
+            onError(error2) {
               if (this.abort) {
                 fetchParams.controller.off("terminated", this.abort);
               }
-              this.body?.destroy(error3);
-              fetchParams.controller.terminate(error3);
-              reject(error3);
+              this.body?.destroy(error2);
+              fetchParams.controller.terminate(error2);
+              reject(error2);
             },
             onUpgrade(status, headersList, socket) {
               if (status !== 101) {
@@ -14434,8 +14434,8 @@ var require_util4 = __commonJS({
                   }
                   fr[kResult] = result;
                   fireAProgressEvent("load", fr);
-                } catch (error3) {
-                  fr[kError] = error3;
+                } catch (error2) {
+                  fr[kError] = error2;
                   fireAProgressEvent("error", fr);
                 }
                 if (fr[kState] !== "loading") {
@@ -14444,13 +14444,13 @@ var require_util4 = __commonJS({
               });
               break;
             }
-          } catch (error3) {
+          } catch (error2) {
             if (fr[kAborted]) {
               return;
             }
             queueMicrotask(() => {
               fr[kState] = "done";
-              fr[kError] = error3;
+              fr[kError] = error2;
               fireAProgressEvent("error", fr);
               if (fr[kState] !== "loading") {
                 fireAProgressEvent("loadend", fr);
@@ -16450,11 +16450,11 @@ var require_connection = __commonJS({
         });
       }
     }
-    function onSocketError(error3) {
+    function onSocketError(error2) {
       const { ws } = this;
       ws[kReadyState] = states.CLOSING;
       if (channels.socketError.hasSubscribers) {
-        channels.socketError.publish(error3);
+        channels.socketError.publish(error2);
       }
       this.destroy();
     }
@@ -17341,22 +17341,22 @@ var require_lib = __commonJS({
       return new (P || (P = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
-            step2(generator.next(value));
+            step(generator.next(value));
           } catch (e) {
             reject(e);
           }
         }
         function rejected(value) {
           try {
-            step2(generator["throw"](value));
+            step(generator["throw"](value));
           } catch (e) {
             reject(e);
           }
         }
-        function step2(result) {
+        function step(result) {
           result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
-        step2((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -17598,12 +17598,12 @@ var require_lib = __commonJS({
             throw new Error("Client has already been disposed.");
           }
           const parsedUrl = new URL(requestUrl);
-          let info3 = this._prepareRequest(verb, parsedUrl, headers);
+          let info2 = this._prepareRequest(verb, parsedUrl, headers);
           const maxTries = this._allowRetries && RetryableHttpVerbs.includes(verb) ? this._maxRetries + 1 : 1;
           let numTries = 0;
           let response;
           do {
-            response = yield this.requestRaw(info3, data);
+            response = yield this.requestRaw(info2, data);
             if (response && response.message && response.message.statusCode === HttpCodes.Unauthorized) {
               let authenticationHandler;
               for (const handler2 of this.handlers) {
@@ -17613,7 +17613,7 @@ var require_lib = __commonJS({
                 }
               }
               if (authenticationHandler) {
-                return authenticationHandler.handleAuthentication(this, info3, data);
+                return authenticationHandler.handleAuthentication(this, info2, data);
               } else {
                 return response;
               }
@@ -17636,8 +17636,8 @@ var require_lib = __commonJS({
                   }
                 }
               }
-              info3 = this._prepareRequest(verb, parsedRedirectUrl, headers);
-              response = yield this.requestRaw(info3, data);
+              info2 = this._prepareRequest(verb, parsedRedirectUrl, headers);
+              response = yield this.requestRaw(info2, data);
               redirectsRemaining--;
             }
             if (!response.message.statusCode || !HttpResponseRetryCodes.includes(response.message.statusCode)) {
@@ -17666,7 +17666,7 @@ var require_lib = __commonJS({
        * @param info
        * @param data
        */
-      requestRaw(info3, data) {
+      requestRaw(info2, data) {
         return __awaiter(this, void 0, void 0, function* () {
           return new Promise((resolve2, reject) => {
             function callbackForResult(err, res) {
@@ -17678,7 +17678,7 @@ var require_lib = __commonJS({
                 resolve2(res);
               }
             }
-            this.requestRawWithCallback(info3, data, callbackForResult);
+            this.requestRawWithCallback(info2, data, callbackForResult);
           });
         });
       }
@@ -17688,12 +17688,12 @@ var require_lib = __commonJS({
        * @param data
        * @param onResult
        */
-      requestRawWithCallback(info3, data, onResult) {
+      requestRawWithCallback(info2, data, onResult) {
         if (typeof data === "string") {
-          if (!info3.options.headers) {
-            info3.options.headers = {};
+          if (!info2.options.headers) {
+            info2.options.headers = {};
           }
-          info3.options.headers["Content-Length"] = Buffer.byteLength(data, "utf8");
+          info2.options.headers["Content-Length"] = Buffer.byteLength(data, "utf8");
         }
         let callbackCalled = false;
         function handleResult(err, res) {
@@ -17702,7 +17702,7 @@ var require_lib = __commonJS({
             onResult(err, res);
           }
         }
-        const req = info3.httpModule.request(info3.options, (msg) => {
+        const req = info2.httpModule.request(info2.options, (msg) => {
           const res = new HttpClientResponse(msg);
           handleResult(void 0, res);
         });
@@ -17714,7 +17714,7 @@ var require_lib = __commonJS({
           if (socket) {
             socket.end();
           }
-          handleResult(new Error(`Request timeout: ${info3.options.path}`));
+          handleResult(new Error(`Request timeout: ${info2.options.path}`));
         });
         req.on("error", function(err) {
           handleResult(err);
@@ -17750,27 +17750,27 @@ var require_lib = __commonJS({
         return this._getProxyAgentDispatcher(parsedUrl, proxyUrl);
       }
       _prepareRequest(method, requestUrl, headers) {
-        const info3 = {};
-        info3.parsedUrl = requestUrl;
-        const usingSsl = info3.parsedUrl.protocol === "https:";
-        info3.httpModule = usingSsl ? https : http;
+        const info2 = {};
+        info2.parsedUrl = requestUrl;
+        const usingSsl = info2.parsedUrl.protocol === "https:";
+        info2.httpModule = usingSsl ? https : http;
         const defaultPort = usingSsl ? 443 : 80;
-        info3.options = {};
-        info3.options.host = info3.parsedUrl.hostname;
-        info3.options.port = info3.parsedUrl.port ? parseInt(info3.parsedUrl.port) : defaultPort;
-        info3.options.path = (info3.parsedUrl.pathname || "") + (info3.parsedUrl.search || "");
-        info3.options.method = method;
-        info3.options.headers = this._mergeHeaders(headers);
+        info2.options = {};
+        info2.options.host = info2.parsedUrl.hostname;
+        info2.options.port = info2.parsedUrl.port ? parseInt(info2.parsedUrl.port) : defaultPort;
+        info2.options.path = (info2.parsedUrl.pathname || "") + (info2.parsedUrl.search || "");
+        info2.options.method = method;
+        info2.options.headers = this._mergeHeaders(headers);
         if (this.userAgent != null) {
-          info3.options.headers["user-agent"] = this.userAgent;
+          info2.options.headers["user-agent"] = this.userAgent;
         }
-        info3.options.agent = this._getAgent(info3.parsedUrl);
+        info2.options.agent = this._getAgent(info2.parsedUrl);
         if (this.handlers) {
           for (const handler2 of this.handlers) {
-            handler2.prepareRequest(info3.options);
+            handler2.prepareRequest(info2.options);
           }
         }
-        return info3;
+        return info2;
       }
       _mergeHeaders(headers) {
         if (this.requestOptions && this.requestOptions.headers) {
@@ -17933,22 +17933,22 @@ var require_auth = __commonJS({
       return new (P || (P = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
-            step2(generator.next(value));
+            step(generator.next(value));
           } catch (e) {
             reject(e);
           }
         }
         function rejected(value) {
           try {
-            step2(generator["throw"](value));
+            step(generator["throw"](value));
           } catch (e) {
             reject(e);
           }
         }
-        function step2(result) {
+        function step(result) {
           result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
-        step2((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -18037,22 +18037,22 @@ var require_oidc_utils = __commonJS({
       return new (P || (P = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
-            step2(generator.next(value));
+            step(generator.next(value));
           } catch (e) {
             reject(e);
           }
         }
         function rejected(value) {
           try {
-            step2(generator["throw"](value));
+            step(generator["throw"](value));
           } catch (e) {
             reject(e);
           }
         }
-        function step2(result) {
+        function step(result) {
           result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
-        step2((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -18086,12 +18086,12 @@ var require_oidc_utils = __commonJS({
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
           const httpclient = _OidcClient.createHttpClient();
-          const res = yield httpclient.getJson(id_token_url).catch((error3) => {
+          const res = yield httpclient.getJson(id_token_url).catch((error2) => {
             throw new Error(`Failed to get ID Token. 
  
-        Error Code : ${error3.statusCode}
+        Error Code : ${error2.statusCode}
  
-        Error Message: ${error3.message}`);
+        Error Message: ${error2.message}`);
           });
           const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
           if (!id_token) {
@@ -18112,8 +18112,8 @@ var require_oidc_utils = __commonJS({
             const id_token = yield _OidcClient.getCall(id_token_url);
             (0, core_1.setSecret)(id_token);
             return id_token;
-          } catch (error3) {
-            throw new Error(`Error message: ${error3.message}`);
+          } catch (error2) {
+            throw new Error(`Error message: ${error2.message}`);
           }
         });
       }
@@ -18135,22 +18135,22 @@ var require_summary = __commonJS({
       return new (P || (P = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
-            step2(generator.next(value));
+            step(generator.next(value));
           } catch (e) {
             reject(e);
           }
         }
         function rejected(value) {
           try {
-            step2(generator["throw"](value));
+            step(generator["throw"](value));
           } catch (e) {
             reject(e);
           }
         }
-        function step2(result) {
+        function step(result) {
           result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
-        step2((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -18501,22 +18501,22 @@ var require_io_util = __commonJS({
       return new (P || (P = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
-            step2(generator.next(value));
+            step(generator.next(value));
           } catch (e) {
             reject(e);
           }
         }
         function rejected(value) {
           try {
-            step2(generator["throw"](value));
+            step(generator["throw"](value));
           } catch (e) {
             reject(e);
           }
         }
-        function step2(result) {
+        function step(result) {
           result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
-        step2((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
     };
     var _a;
@@ -18674,22 +18674,22 @@ var require_io = __commonJS({
       return new (P || (P = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
-            step2(generator.next(value));
+            step(generator.next(value));
           } catch (e) {
             reject(e);
           }
         }
         function rejected(value) {
           try {
-            step2(generator["throw"](value));
+            step(generator["throw"](value));
           } catch (e) {
             reject(e);
           }
         }
-        function step2(result) {
+        function step(result) {
           result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
-        step2((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -18922,22 +18922,22 @@ var require_toolrunner = __commonJS({
       return new (P || (P = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
-            step2(generator.next(value));
+            step(generator.next(value));
           } catch (e) {
             reject(e);
           }
         }
         function rejected(value) {
           try {
-            step2(generator["throw"](value));
+            step(generator["throw"](value));
           } catch (e) {
             reject(e);
           }
         }
-        function step2(result) {
+        function step(result) {
           result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
-        step2((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -19235,7 +19235,7 @@ var require_toolrunner = __commonJS({
               this._debug(`STDIO streams have closed for tool '${this.toolPath}'`);
               state.CheckComplete();
             });
-            state.on("done", (error3, exitCode) => {
+            state.on("done", (error2, exitCode) => {
               if (stdbuffer.length > 0) {
                 this.emit("stdline", stdbuffer);
               }
@@ -19243,8 +19243,8 @@ var require_toolrunner = __commonJS({
                 this.emit("errline", errbuffer);
               }
               cp.removeAllListeners();
-              if (error3) {
-                reject(error3);
+              if (error2) {
+                reject(error2);
               } else {
                 resolve2(exitCode);
               }
@@ -19339,14 +19339,14 @@ var require_toolrunner = __commonJS({
         this.emit("debug", message);
       }
       _setResult() {
-        let error3;
+        let error2;
         if (this.processExited) {
           if (this.processError) {
-            error3 = new Error(`There was an error when attempting to execute the process '${this.toolPath}'. This may indicate the process failed to start. Error: ${this.processError}`);
+            error2 = new Error(`There was an error when attempting to execute the process '${this.toolPath}'. This may indicate the process failed to start. Error: ${this.processError}`);
           } else if (this.processExitCode !== 0 && !this.options.ignoreReturnCode) {
-            error3 = new Error(`The process '${this.toolPath}' failed with exit code ${this.processExitCode}`);
+            error2 = new Error(`The process '${this.toolPath}' failed with exit code ${this.processExitCode}`);
           } else if (this.processStderr && this.options.failOnStdErr) {
-            error3 = new Error(`The process '${this.toolPath}' failed because one or more lines were written to the STDERR stream`);
+            error2 = new Error(`The process '${this.toolPath}' failed because one or more lines were written to the STDERR stream`);
           }
         }
         if (this.timeout) {
@@ -19354,7 +19354,7 @@ var require_toolrunner = __commonJS({
           this.timeout = null;
         }
         this.done = true;
-        this.emit("done", error3, this.processExitCode);
+        this.emit("done", error2, this.processExitCode);
       }
       static HandleTimeout(state) {
         if (state.done) {
@@ -19406,22 +19406,22 @@ var require_exec = __commonJS({
       return new (P || (P = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
-            step2(generator.next(value));
+            step(generator.next(value));
           } catch (e) {
             reject(e);
           }
         }
         function rejected(value) {
           try {
-            step2(generator["throw"](value));
+            step(generator["throw"](value));
           } catch (e) {
             reject(e);
           }
         }
-        function step2(result) {
+        function step(result) {
           result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
-        step2((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -19517,22 +19517,22 @@ var require_platform = __commonJS({
       return new (P || (P = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
-            step2(generator.next(value));
+            step(generator.next(value));
           } catch (e) {
             reject(e);
           }
         }
         function rejected(value) {
           try {
-            step2(generator["throw"](value));
+            step(generator["throw"](value));
           } catch (e) {
             reject(e);
           }
         }
-        function step2(result) {
+        function step(result) {
           result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
-        step2((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
     };
     var __importDefault = exports2 && exports2.__importDefault || function(mod) {
@@ -19636,22 +19636,22 @@ var require_core = __commonJS({
       return new (P || (P = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
-            step2(generator.next(value));
+            step(generator.next(value));
           } catch (e) {
             reject(e);
           }
         }
         function rejected(value) {
           try {
-            step2(generator["throw"](value));
+            step(generator["throw"](value));
           } catch (e) {
             reject(e);
           }
         }
-        function step2(result) {
+        function step(result) {
           result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
-        step2((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -19735,11 +19735,11 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       (0, command_1.issue)("echo", enabled ? "on" : "off");
     }
     exports2.setCommandEcho = setCommandEcho;
-    function setFailed3(message) {
+    function setFailed2(message) {
       process.exitCode = ExitCode.Failure;
-      error3(message);
+      error2(message);
     }
-    exports2.setFailed = setFailed3;
+    exports2.setFailed = setFailed2;
     function isDebug() {
       return process.env["RUNNER_DEBUG"] === "1";
     }
@@ -19748,30 +19748,30 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       (0, command_1.issueCommand)("debug", {}, message);
     }
     exports2.debug = debug;
-    function error3(message, properties = {}) {
+    function error2(message, properties = {}) {
       (0, command_1.issueCommand)("error", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
-    exports2.error = error3;
-    function warning3(message, properties = {}) {
+    exports2.error = error2;
+    function warning2(message, properties = {}) {
       (0, command_1.issueCommand)("warning", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
-    exports2.warning = warning3;
+    exports2.warning = warning2;
     function notice(message, properties = {}) {
       (0, command_1.issueCommand)("notice", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
     exports2.notice = notice;
-    function info3(message) {
+    function info2(message) {
       process.stdout.write(message + os.EOL);
     }
-    exports2.info = info3;
+    exports2.info = info2;
     function startGroup2(name) {
       (0, command_1.issue)("group", name);
     }
     exports2.startGroup = startGroup2;
-    function endGroup3() {
+    function endGroup2() {
       (0, command_1.issue)("endgroup");
     }
-    exports2.endGroup = endGroup3;
+    exports2.endGroup = endGroup2;
     function group(name, fn) {
       return __awaiter(this, void 0, void 0, function* () {
         startGroup2(name);
@@ -19779,7 +19779,7 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
         try {
           result = yield fn();
         } finally {
-          endGroup3();
+          endGroup2();
         }
         return result;
       });
@@ -19924,22 +19924,22 @@ var require_utils3 = __commonJS({
       return new (P || (P = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
-            step2(generator.next(value));
+            step(generator.next(value));
           } catch (e) {
             reject(e);
           }
         }
         function rejected(value) {
           try {
-            step2(generator["throw"](value));
+            step(generator["throw"](value));
           } catch (e) {
             reject(e);
           }
         }
-        function step2(result) {
+        function step(result) {
           result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
-        step2((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -20053,8 +20053,8 @@ var require_add = __commonJS({
       }
       if (kind === "error") {
         hook2 = function(method, options) {
-          return Promise.resolve().then(method.bind(null, options)).catch(function(error3) {
-            return orig(error3, options);
+          return Promise.resolve().then(method.bind(null, options)).catch(function(error2) {
+            return orig(error2, options);
           });
         };
       }
@@ -20847,7 +20847,7 @@ function fetchWrapper(requestOptions) {
     }
     if (status >= 400) {
       const data = await getResponseData(response);
-      const error3 = new RequestError(toErrorMessage(data), status, {
+      const error2 = new RequestError(toErrorMessage(data), status, {
         response: {
           url,
           status,
@@ -20856,7 +20856,7 @@ function fetchWrapper(requestOptions) {
         },
         request: requestOptions
       });
-      throw error3;
+      throw error2;
     }
     return parseSuccessResponseBody ? await getResponseData(response) : response.body;
   }).then((data) => {
@@ -20866,17 +20866,17 @@ function fetchWrapper(requestOptions) {
       headers,
       data
     };
-  }).catch((error3) => {
-    if (error3 instanceof RequestError)
-      throw error3;
-    else if (error3.name === "AbortError")
-      throw error3;
-    let message = error3.message;
-    if (error3.name === "TypeError" && "cause" in error3) {
-      if (error3.cause instanceof Error) {
-        message = error3.cause.message;
-      } else if (typeof error3.cause === "string") {
-        message = error3.cause;
+  }).catch((error2) => {
+    if (error2 instanceof RequestError)
+      throw error2;
+    else if (error2.name === "AbortError")
+      throw error2;
+    let message = error2.message;
+    if (error2.name === "TypeError" && "cause" in error2) {
+      if (error2.cause instanceof Error) {
+        message = error2.cause.message;
+      } else if (typeof error2.cause === "string") {
+        message = error2.cause;
       }
     }
     throw new RequestError(message, 500, {
@@ -23523,9 +23523,9 @@ function iterator(octokit, route, parameters) {
             /<([^<>]+)>;\s*rel="next"/
           ) || [])[1];
           return { value: normalizedResponse };
-        } catch (error3) {
-          if (error3.status !== 409)
-            throw error3;
+        } catch (error2) {
+          if (error2.status !== 409)
+            throw error2;
           url = "";
           return {
             value: {
@@ -23937,7 +23937,6 @@ var require_github = __commonJS({
 
 // src/index.ts
 var core4 = __toESM(require_core());
-var github2 = __toESM(require_github());
 
 // src/config.ts
 var core = __toESM(require_core());
@@ -23972,293 +23971,300 @@ var Config = class {
   }
 };
 
+// src/log.ts
+var core2 = __toESM(require_core());
+var Logger = class {
+  static info(message) {
+    core2.info(message);
+  }
+  static warning(message) {
+    core2.warning(message);
+  }
+  static error(message) {
+    core2.error(message);
+  }
+  static success(message) {
+    core2.info(`\u2713 ${message}`);
+  }
+  static step(message) {
+    core2.startGroup(message);
+  }
+  static endGroup() {
+    core2.endGroup();
+  }
+};
+
+// src/workflow.ts
+var core3 = __toESM(require_core());
+var github2 = __toESM(require_github());
+
 // src/build.ts
 var import_exec = __toESM(require_exec());
 var import_fs = require("fs");
 var import_path = require("path");
 
-// src/log.ts
-var core2 = __toESM(require_core());
-var info2 = core2.info;
-var warning2 = core2.warning;
-var error2 = core2.error;
-function success(message) {
-  core2.info(`\u2713 ${message}`);
-}
-function step(message) {
-  core2.startGroup(message);
-}
-function endGroup2() {
-  core2.endGroup();
-}
+// src/target.ts
+var ARCH = {
+  AARCH64: "aarch64",
+  X86_64: "x86_64"
+};
+var RUST_TARGETS = {
+  AARCH64_MAC: "aarch64-apple-darwin",
+  X86_64_MAC: "x86_64-apple-darwin",
+  X86_64_WINDOWS: "x86_64-pc-windows-msvc",
+  X86_64_LINUX: "x86_64-unknown-linux-gnu",
+  AARCH64_LINUX: "aarch64-unknown-linux-gnu"
+};
+var PLATFORMS = {
+  DARWIN_AARCH64: "darwin-aarch64",
+  DARWIN_X86_64: "darwin-x86_64",
+  WINDOWS_X86_64: "windows-x86_64",
+  LINUX_X86_64: "linux-x86_64",
+  LINUX_AARCH64: "linux-aarch64"
+};
+var TARGET_PLATFORM = {
+  [RUST_TARGETS.AARCH64_MAC]: PLATFORMS.DARWIN_AARCH64,
+  [RUST_TARGETS.X86_64_MAC]: PLATFORMS.DARWIN_X86_64,
+  [RUST_TARGETS.X86_64_WINDOWS]: PLATFORMS.WINDOWS_X86_64,
+  [RUST_TARGETS.X86_64_LINUX]: PLATFORMS.LINUX_X86_64,
+  [RUST_TARGETS.AARCH64_LINUX]: PLATFORMS.LINUX_AARCH64
+};
+var EXT = {
+  DMG: ".dmg",
+  TAR_GZ: ".tar.gz",
+  APP: ".app",
+  APPIMAGE: ".appimage",
+  APP_IMAGE: ".AppImage",
+  DEB: ".deb",
+  MSI: ".msi",
+  EXE: ".exe",
+  SIG: ".sig"
+};
+var ARCH_ALIASES = {
+  ARM64: "arm64",
+  X64: "x64",
+  AMD64: "amd64",
+  INTEL: "intel"
+};
+var Target = class {
+  static toPlatform(target) {
+    const platform = TARGET_PLATFORM[target];
+    if (!platform) {
+      throw new Error(`Unknown target: ${target}`);
+    }
+    return platform;
+  }
+  static archSuffix(target) {
+    if (target.includes(ARCH.AARCH64)) return ARCH.AARCH64;
+    if (target.includes(ARCH.X86_64)) return ARCH.X86_64;
+    return "";
+  }
+  static logSupported() {
+    Logger.info("Supported targets:");
+    for (const [key, value] of Object.entries(TARGET_PLATFORM)) {
+      Logger.info(`  ${key} \u2192 ${value}`);
+    }
+  }
+};
 
 // src/build.ts
-var TARGET_MAP = {
-  "aarch64-apple-darwin": "darwin-aarch64",
-  "x86_64-apple-darwin": "darwin-x86_64",
-  "x86_64-pc-windows-msvc": "windows-x86_64",
-  "x86_64-unknown-linux-gnu": "linux-x86_64",
-  "aarch64-unknown-linux-gnu": "linux-aarch64"
-};
-function archSuffix(target) {
-  if (target.includes("aarch64")) return "aarch64";
-  if (target.includes("x86_64")) return "x86_64";
-  return "";
-}
-function targetToPlatform(target) {
-  const platform = TARGET_MAP[target];
-  if (!platform) {
-    throw new Error(`Unknown target: ${target}`);
+var Builder = class _Builder {
+  static readSignature(sigPath) {
+    return (0, import_fs.readFileSync)(sigPath, "utf-8").trim();
   }
-  return platform;
-}
-function findRunner(root) {
-  if ((0, import_fs.existsSync)((0, import_path.join)(root, "pnpm-lock.yaml"))) return "pnpm";
-  if ((0, import_fs.existsSync)((0, import_path.join)(root, "yarn.lock"))) return "yarn";
-  if ((0, import_fs.existsSync)((0, import_path.join)(root, "bun.lockb"))) return "bun";
-  return "npm";
-}
-async function buildTauri(projectPath, target, privateKey, extraArgs) {
-  const root = (0, import_path.resolve)(projectPath);
-  if (!(0, import_fs.existsSync)((0, import_path.join)(root, "src-tauri"))) {
-    throw new Error(`No src-tauri directory found in ${root}`);
-  }
-  const env = { ...process.env };
-  if (privateKey) {
-    env["TAURI_PRIVATE_KEY"] = privateKey;
-    env["TAURI_SIGNING_PRIVATE_KEY"] = privateKey;
-    env["TAURI_SIGNING_PRIVATE_KEY_PASSWORD"] = process.env.TAURI_PRIVATE_KEY_PASSWORD || "";
-  }
-  const runner = findRunner(root);
-  const cmd = runner === "npm" ? "npx" : runner;
-  const execArgs = ["tauri", "build", "--target", target];
-  if (extraArgs) {
-    execArgs.push(...extraArgs.split(/\s+/).filter(Boolean));
-  }
-  step(`Running: ${cmd} ${execArgs.join(" ")}`);
-  const exitCode = await (0, import_exec.exec)(cmd, execArgs, { cwd: root, env });
-  endGroup2();
-  if (exitCode !== 0) {
-    throw new Error(`Tauri build failed with exit code ${exitCode}`);
-  }
-  const bundleDir = (0, import_path.join)(root, "src-tauri", "target", target, "release", "bundle");
-  if (!(0, import_fs.existsSync)(bundleDir)) {
-    throw new Error(`Bundle directory not found: ${bundleDir}`);
-  }
-  const tauriConfPath = (0, import_path.join)(root, "src-tauri", "tauri.conf.json");
-  const tauriConf = JSON.parse((0, import_fs.readFileSync)(tauriConfPath, "utf-8"));
-  const appVersion = tauriConf.version || "";
-  const artifacts = [];
-  const platform = targetToPlatform(target);
-  const dmgDir = (0, import_path.join)(bundleDir, "dmg");
-  if ((0, import_fs.existsSync)(dmgDir)) {
-    const files = (0, import_fs.readdirSync)(dmgDir).filter((f) => f.endsWith(".dmg"));
-    for (const f of files) {
-      artifacts.push({ path: (0, import_path.join)(dmgDir, f), name: f, type: "dmg" });
+  static async run(projectPath, target, privateKey, extraArgs) {
+    const root = (0, import_path.resolve)(projectPath);
+    Logger.info(`Resolved project root: ${root}`);
+    if (!(0, import_fs.existsSync)((0, import_path.join)(root, "src-tauri"))) {
+      throw new Error(`No src-tauri directory found in ${root}`);
     }
-  }
-  const msiDir = (0, import_path.join)(bundleDir, "msi");
-  if ((0, import_fs.existsSync)(msiDir)) {
-    const files = (0, import_fs.readdirSync)(msiDir).filter((f) => f.endsWith(".msi"));
-    for (const f of files) {
-      artifacts.push({ path: (0, import_path.join)(msiDir, f), name: f, type: "installer" });
+    const env = { ...process.env };
+    if (privateKey) {
+      Logger.info("Private key provided \u2014 signing will be enabled");
+      env["TAURI_PRIVATE_KEY"] = privateKey;
+      env["TAURI_SIGNING_PRIVATE_KEY"] = privateKey;
+      env["TAURI_SIGNING_PRIVATE_KEY_PASSWORD"] = process.env.TAURI_PRIVATE_KEY_PASSWORD || "";
+    } else {
+      Logger.info("No private key \u2014 skipping signing");
     }
-  }
-  const nsisDir = (0, import_path.join)(bundleDir, "nsis");
-  if ((0, import_fs.existsSync)(nsisDir)) {
-    const files = (0, import_fs.readdirSync)(nsisDir).filter((f) => f.endsWith(".exe"));
-    for (const f of files) {
-      artifacts.push({ path: (0, import_path.join)(nsisDir, f), name: f, type: "installer" });
+    const runner = _Builder.findRunner(root);
+    Logger.info(`Detected package manager: ${runner}`);
+    const cmd = runner === "npm" ? "npx" : runner;
+    const execArgs = ["tauri", "build", "--target", target];
+    if (extraArgs) {
+      const extra = extraArgs.split(/\s+/).filter(Boolean);
+      Logger.info(`Extra args: ${extra.join(" ")}`);
+      execArgs.push(...extra);
     }
-  }
-  const appImageDir = (0, import_path.join)(bundleDir, "appimage");
-  if ((0, import_fs.existsSync)(appImageDir)) {
-    const files = (0, import_fs.readdirSync)(appImageDir).filter((f) => f.endsWith(".AppImage"));
-    for (const f of files) {
-      artifacts.push({ path: (0, import_path.join)(appImageDir, f), name: f, type: "installer" });
+    Logger.step("Running tauri build");
+    Logger.info(`Command: ${cmd} ${execArgs.join(" ")}`);
+    const exitCode = await (0, import_exec.exec)(cmd, execArgs, { cwd: root, env });
+    Logger.endGroup();
+    if (exitCode !== 0) {
+      throw new Error(`Tauri build failed with exit code ${exitCode}`);
     }
-  }
-  const debDir = (0, import_path.join)(bundleDir, "deb");
-  if ((0, import_fs.existsSync)(debDir)) {
-    const files = (0, import_fs.readdirSync)(debDir).filter((f) => f.endsWith(".deb"));
-    for (const f of files) {
-      artifacts.push({ path: (0, import_path.join)(debDir, f), name: f, type: "installer" });
+    Logger.info("Build completed successfully");
+    const bundleDir = (0, import_path.join)(root, "src-tauri", "target", target, "release", "bundle");
+    if (!(0, import_fs.existsSync)(bundleDir)) {
+      throw new Error(`Bundle directory not found: ${bundleDir}`);
     }
+    Logger.info(`Bundle directory: ${bundleDir}`);
+    const tauriConfPath = (0, import_path.join)(root, "src-tauri", "tauri.conf.json");
+    const tauriConf = JSON.parse((0, import_fs.readFileSync)(tauriConfPath, "utf-8"));
+    const appVersion = tauriConf.version || "";
+    Logger.info(`App version: ${appVersion}`);
+    const artifacts = [];
+    Logger.step("Collecting artifacts");
+    const dmgDir = (0, import_path.join)(bundleDir, "dmg");
+    if ((0, import_fs.existsSync)(dmgDir)) {
+      const files = (0, import_fs.readdirSync)(dmgDir).filter((f) => f.endsWith(EXT.DMG));
+      Logger.info(`Found ${files.length} DMG file(s) in ${dmgDir}`);
+      for (const f of files) {
+        artifacts.push({ path: (0, import_path.join)(dmgDir, f), name: f, type: "dmg" });
+        Logger.info(`  \u2192 ${f}`);
+      }
+    }
+    const msiDir = (0, import_path.join)(bundleDir, "msi");
+    if ((0, import_fs.existsSync)(msiDir)) {
+      const files = (0, import_fs.readdirSync)(msiDir).filter((f) => f.endsWith(EXT.MSI));
+      Logger.info(`Found ${files.length} MSI file(s)`);
+      for (const f of files) {
+        artifacts.push({ path: (0, import_path.join)(msiDir, f), name: f, type: "installer" });
+        Logger.info(`  \u2192 ${f}`);
+      }
+    }
+    const nsisDir = (0, import_path.join)(bundleDir, "nsis");
+    if ((0, import_fs.existsSync)(nsisDir)) {
+      const files = (0, import_fs.readdirSync)(nsisDir).filter((f) => f.endsWith(EXT.EXE));
+      Logger.info(`Found ${files.length} NSIS file(s)`);
+      for (const f of files) {
+        artifacts.push({ path: (0, import_path.join)(nsisDir, f), name: f, type: "installer" });
+        Logger.info(`  \u2192 ${f}`);
+      }
+    }
+    const appImageDir = (0, import_path.join)(bundleDir, "appimage");
+    if ((0, import_fs.existsSync)(appImageDir)) {
+      const files = (0, import_fs.readdirSync)(appImageDir).filter((f) => f.endsWith(EXT.APP_IMAGE));
+      Logger.info(`Found ${files.length} AppImage file(s)`);
+      for (const f of files) {
+        artifacts.push({ path: (0, import_path.join)(appImageDir, f), name: f, type: "installer" });
+        Logger.info(`  \u2192 ${f}`);
+      }
+    }
+    const debDir = (0, import_path.join)(bundleDir, "deb");
+    if ((0, import_fs.existsSync)(debDir)) {
+      const files = (0, import_fs.readdirSync)(debDir).filter((f) => f.endsWith(EXT.DEB));
+      Logger.info(`Found ${files.length} deb file(s)`);
+      for (const f of files) {
+        artifacts.push({ path: (0, import_path.join)(debDir, f), name: f, type: "installer" });
+        Logger.info(`  \u2192 ${f}`);
+      }
+    }
+    const macosDir = (0, import_path.join)(bundleDir, "macos");
+    await _Builder.collectMacosArtifacts(macosDir, target, privateKey, runner, root, env, artifacts);
+    Logger.endGroup();
+    Logger.success(`Collected ${artifacts.length} artifact(s) total`);
+    return { artifacts, appVersion };
   }
-  const macosDir = (0, import_path.join)(bundleDir, "macos");
-  if ((0, import_fs.existsSync)(macosDir)) {
-    let hasTarGz = (0, import_fs.readdirSync)(macosDir).some((f) => f.endsWith(".tar.gz"));
+  static async collectMacosArtifacts(macosDir, target, privateKey, runner, root, env, artifacts) {
+    if (!(0, import_fs.existsSync)(macosDir)) {
+      Logger.info("macOS bundle directory not found \u2014 skipping");
+      return;
+    }
+    Logger.info("Processing macOS artifacts...");
+    let hasTarGz = (0, import_fs.readdirSync)(macosDir).some((f) => f.endsWith(EXT.TAR_GZ));
     if (!hasTarGz) {
-      const appDir = (0, import_fs.readdirSync)(macosDir).find((f) => f.endsWith(".app"));
+      const appDir = (0, import_fs.readdirSync)(macosDir).find((f) => f.endsWith(EXT.APP));
       if (appDir) {
-        info2(`Creating ${appDir}.tar.gz...`);
-        const tarPath = (0, import_path.join)(macosDir, `${appDir}.tar.gz`);
+        Logger.info(`Creating ${appDir}${EXT.TAR_GZ}...`);
+        const tarPath = (0, import_path.join)(macosDir, `${appDir}${EXT.TAR_GZ}`);
         await (0, import_exec.exec)("tar", ["czf", tarPath, "-C", macosDir, appDir], { cwd: macosDir });
+        Logger.info("Archive created");
         hasTarGz = true;
         if (privateKey) {
-          await tryGenerateSignature(tarPath, runner, root, env);
+          Logger.step("Signing archive");
+          await _Builder.signArchive(tarPath, runner, root, env);
+          Logger.endGroup();
         }
       }
     }
-    if (hasTarGz) {
-      for (const f of (0, import_fs.readdirSync)(macosDir)) {
-        if (f.endsWith(".tar.gz")) {
-          let name = f;
-          if (!name.includes("aarch64") && !name.includes("x86_64")) {
-            const suffix = archSuffix(target);
-            if (suffix) {
-              name = name.replace(".app.tar.gz", `_${suffix}.app.tar.gz`);
-              const oldPath = (0, import_path.join)(macosDir, f);
-              const newPath = (0, import_path.join)(macosDir, name);
-              (0, import_fs.renameSync)(oldPath, newPath);
-              info2(`Renamed archive: ${f} \u2192 ${name}`);
-            }
+    if (!hasTarGz) {
+      Logger.info(`No ${EXT.APP} or ${EXT.TAR_GZ} found in macOS bundle \u2014 skip`);
+      return;
+    }
+    for (const f of (0, import_fs.readdirSync)(macosDir)) {
+      if (f.endsWith(EXT.TAR_GZ)) {
+        let name = f;
+        if (!name.includes(ARCH.AARCH64) && !name.includes(ARCH.X86_64)) {
+          const suffix = Target.archSuffix(target);
+          if (suffix) {
+            name = name.replace(`${EXT.APP}${EXT.TAR_GZ}`, `_${suffix}${EXT.APP}${EXT.TAR_GZ}`);
+            (0, import_fs.renameSync)((0, import_path.join)(macosDir, f), (0, import_path.join)(macosDir, name));
+            Logger.info(`Renamed archive: ${f} \u2192 ${name}`);
           }
-          artifacts.push({ path: (0, import_path.join)(macosDir, name), name, type: "archive" });
         }
-        if (f.endsWith(".sig")) {
-          let name = f;
-          if (!name.includes("aarch64") && !name.includes("x86_64")) {
-            const suffix = archSuffix(target);
-            if (suffix) {
-              name = name.replace(".app.tar.gz.sig", `_${suffix}.app.tar.gz.sig`);
-              const oldPath = (0, import_path.join)(macosDir, f);
-              const newPath = (0, import_path.join)(macosDir, name);
-              (0, import_fs.renameSync)(oldPath, newPath);
-              info2(`Renamed sig: ${f} \u2192 ${name}`);
-            }
-          }
-          artifacts.push({ path: (0, import_path.join)(macosDir, name), name, type: "signature" });
-        }
+        artifacts.push({ path: (0, import_path.join)(macosDir, name), name, type: "archive" });
+        Logger.info(`  \u2192 archive: ${name}`);
       }
-      if (privateKey) {
-        for (const a of artifacts) {
-          if (a.type === "archive") {
-            const sigName = `${a.name}.sig`;
-            if (!(0, import_fs.existsSync)((0, import_path.join)(macosDir, sigName))) {
-              const ok = await tryGenerateSignature(a.path, runner, root, env);
-              if (ok) {
-                artifacts.push({ path: (0, import_path.join)(macosDir, sigName), name: sigName, type: "signature" });
-              }
-            }
+      if (f.endsWith(EXT.SIG)) {
+        let name = f;
+        if (!name.includes(ARCH.AARCH64) && !name.includes(ARCH.X86_64)) {
+          const suffix = Target.archSuffix(target);
+          if (suffix) {
+            name = name.replace(
+              `${EXT.APP}${EXT.TAR_GZ}${EXT.SIG}`,
+              `_${suffix}${EXT.APP}${EXT.TAR_GZ}${EXT.SIG}`
+            );
+            (0, import_fs.renameSync)((0, import_path.join)(macosDir, f), (0, import_path.join)(macosDir, name));
+            Logger.info(`Renamed sig: ${f} \u2192 ${name}`);
           }
         }
+        artifacts.push({ path: (0, import_path.join)(macosDir, name), name, type: "signature" });
+        Logger.info(`  \u2192 signature: ${name}`);
       }
     }
-  }
-  success(`Collected ${artifacts.length} artifact(s)`);
-  return { artifacts, appVersion };
-}
-async function tryGenerateSignature(filePath, runner, root, env) {
-  try {
-    const cmd = runner === "npm" ? "npx" : runner;
-    const exitCode = await (0, import_exec.exec)(cmd, ["tauri", "signer", "sign", filePath], { env, cwd: root });
-    if (exitCode !== 0) {
-      throw new Error(`tauri signer sign exited with code ${exitCode}`);
+    if (privateKey) {
+      for (const a of artifacts) {
+        if (a.type === "archive") {
+          const sigName = `${a.name}${EXT.SIG}`;
+          if (!(0, import_fs.existsSync)((0, import_path.join)(macosDir, sigName))) {
+            Logger.info(`Missing .sig for ${a.name}, generating...`);
+            Logger.step("Signing archive");
+            const ok = await _Builder.signArchive(a.path, runner, root, env);
+            Logger.endGroup();
+            if (ok) {
+              artifacts.push({ path: (0, import_path.join)(macosDir, sigName), name: sigName, type: "signature" });
+              Logger.info(`  \u2192 signature: ${sigName}`);
+            }
+          }
+        }
+      }
     }
-    info2(`Generated signature: ${filePath}.sig`);
-    return true;
-  } catch (err) {
-    warning2(`Failed to generate .sig: ${err.message}`);
-    return false;
   }
-}
-function readSignature(sigPath) {
-  const content = (0, import_fs.readFileSync)(sigPath, "utf-8").trim();
-  return content;
-}
-
-// src/generate-updater.ts
-var github = __toESM(require_github());
-function inferPlatform(assetName) {
-  const lower = assetName.toLowerCase();
-  if (lower.includes("aarch64") || lower.includes("arm64")) {
-    if (lower.endsWith(".tar.gz") || lower.includes(".app")) return "darwin-aarch64";
-    if (lower.endsWith(".appimage") || lower.endsWith(".deb")) return "linux-aarch64";
-  }
-  if (lower.includes("x86_64") || lower.includes("x64") || lower.includes("amd64") || lower.includes("intel")) {
-    if (lower.endsWith(".tar.gz") || lower.includes(".app")) return "darwin-x86_64";
-    if (lower.endsWith(".msi") || lower.endsWith(".exe")) return "windows-x86_64";
-    if (lower.endsWith(".appimage") || lower.endsWith(".deb")) return "linux-x86_64";
-  }
-  return null;
-}
-async function runGenerateUpdater(config) {
-  step("Generating updater.json");
-  const [owner, repoName] = config.parseRepo();
-  const octokit = github.getOctokit(config.token);
-  const { data: release } = await octokit.rest.repos.getReleaseByTag({
-    owner,
-    repo: repoName,
-    tag: config.tag
-  });
-  info2(`Found release ID: ${release.id}`);
-  const { data: assets } = await octokit.rest.repos.listReleaseAssets({
-    owner,
-    repo: repoName,
-    release_id: release.id,
-    per_page: 100
-  });
-  info2(`Found ${assets.length} asset(s)`);
-  const sigAssets = assets.filter((a) => a.name.endsWith(".sig"));
-  const platforms = {};
-  for (const sigAsset of sigAssets) {
-    const archiveName = sigAsset.name.replace(/\.sig$/, "");
-    const platform = inferPlatform(archiveName);
-    if (!platform) {
-      info2(`Skipping ${sigAsset.name}: could not infer platform`);
-      continue;
+  static async signArchive(filePath, runner, root, env) {
+    try {
+      const cmd = runner === "npm" ? "npx" : runner;
+      Logger.info(`Signing: ${filePath}`);
+      const exitCode = await (0, import_exec.exec)(cmd, ["tauri", "signer", "sign", filePath], { env, cwd: root });
+      if (exitCode !== 0) {
+        throw new Error(`tauri signer sign exited with code ${exitCode}`);
+      }
+      Logger.info(`Generated signature: ${filePath}${EXT.SIG}`);
+      return true;
+    } catch (err) {
+      Logger.warning(`Failed to generate .sig: ${err.message}`);
+      return false;
     }
-    const sigResponse = await octokit.rest.repos.getReleaseAsset({
-      owner,
-      repo: repoName,
-      asset_id: sigAsset.id,
-      headers: { accept: "application/octet-stream" }
-    });
-    const signature = String(sigResponse.data).trim();
-    const downloadUrl = `https://github.com/${config.repo}/releases/latest/download/${encodeURIComponent(archiveName)}`;
-    platforms[platform] = { signature, url: downloadUrl };
-    info2(`  ${platform}: ${archiveName}`);
   }
-  if (Object.keys(platforms).length === 0) {
-    throw new Error("No .sig files found in release");
+  static findRunner(root) {
+    if ((0, import_fs.existsSync)((0, import_path.join)(root, "pnpm-lock.yaml"))) return "pnpm";
+    if ((0, import_fs.existsSync)((0, import_path.join)(root, "yarn.lock"))) return "yarn";
+    if ((0, import_fs.existsSync)((0, import_path.join)(root, "bun.lockb"))) return "bun";
+    return "npm";
   }
-  const version = config.tag.replace(/^v/, "");
-  const updater = {
-    version,
-    notes: "",
-    pub_date: (/* @__PURE__ */ new Date()).toISOString(),
-    platforms
-  };
-  const updaterContent = JSON.stringify(updater, null, 2);
-  info2(`updater.json:
-${updaterContent}`);
-  const existingUpdater = assets.find((a) => a.name === "updater.json");
-  if (existingUpdater) {
-    await octokit.rest.repos.deleteReleaseAsset({
-      owner,
-      repo: repoName,
-      asset_id: existingUpdater.id
-    });
-    info2("Deleted existing updater.json");
-  }
-  await octokit.rest.repos.uploadReleaseAsset({
-    owner,
-    repo: repoName,
-    release_id: release.id,
-    name: "updater.json",
-    data: Buffer.from(updaterContent, "utf-8"),
-    headers: {
-      "content-type": "application/json",
-      "content-length": Buffer.byteLength(updaterContent, "utf-8")
-    }
-  });
-  endGroup2();
-  success("updater.json generated and uploaded");
-}
+};
 
 // src/release.ts
-var core3 = __toESM(require_core());
 var import_fs2 = require("fs");
 var import_path2 = require("path");
 var Release = class {
@@ -24270,14 +24276,20 @@ var Release = class {
     this.tag = tag;
   }
   async ensureRelease(body) {
+    Logger.info("Checking if release already exists...");
     const existingId = await this.getReleaseByTag();
     if (existingId) {
       this.releaseId = existingId;
-      success(`Found existing release ID: ${this.releaseId}`);
+      Logger.info(`Found existing release ID: ${this.releaseId}`);
       return this.releaseId;
     }
-    step(`Creating release "${this.tag}"`);
+    Logger.info("Release not found \u2014 creating new one");
     const releaseBody = body || await this.generateReleaseNotes();
+    if (body) {
+      Logger.info("Using provided release body");
+    } else {
+      Logger.info("Using auto-generated release notes");
+    }
     const response = await this.octokit.rest.repos.createRelease({
       owner: this.owner,
       repo: this.repoName,
@@ -24288,25 +24300,24 @@ var Release = class {
       prerelease: false
     });
     this.releaseId = response.data.id;
-    endGroup2();
-    success(`Created release ID: ${this.releaseId}`);
+    Logger.success(`Created release ID: ${this.releaseId}`);
     return this.releaseId;
   }
   async uploadAll(filePaths) {
     if (!this.releaseId) {
       throw new Error("Release not ensured. Call ensureRelease() first.");
     }
-    const results = await Promise.allSettled(
-      filePaths.map((file) => this.uploadAsset(file))
-    );
+    Logger.info(`Uploading ${filePaths.length} file(s) to release ${this.releaseId}...`);
+    const results = await Promise.allSettled(filePaths.map((file) => this.uploadAsset(file)));
+    const succeeded = results.filter((r) => r.status === "fulfilled").length;
     const failed = results.filter((r) => r.status === "rejected");
+    Logger.info(`Uploaded: ${succeeded}, Failed: ${failed.length}`);
     if (failed.length > 0) {
-      for (const f of failed) {
+      const messages = failed.map((f) => {
         const reason = f.reason;
-        error2(`Upload failed: ${reason?.message || reason}`);
-      }
-      core3.setFailed(`${failed.length} file(s) failed to upload`);
-      return [];
+        return reason?.message || String(reason);
+      });
+      throw new Error(`Upload failed for ${failed.length} file(s): ${messages.join("; ")}`);
     }
     return results.map((r) => r.value);
   }
@@ -24317,24 +24328,29 @@ var Release = class {
         repo: this.repoName,
         tag: this.tag
       });
+      Logger.info(`Release found: ID ${response.data.id}`);
       return response.data.id;
     } catch (err) {
       const httpError = err;
-      if (httpError.status !== 404) {
-        throw new Error(`Failed to check release: ${err?.message || err}`);
+      if (httpError.status === 404) {
+        Logger.info("No existing release found (404)");
+        return null;
       }
-      return null;
+      throw new Error(`Failed to check release: ${err?.message || err}`, { cause: err });
     }
   }
   async generateReleaseNotes() {
     try {
+      Logger.info("Generating release notes...");
       const notes = await this.octokit.rest.repos.generateReleaseNotes({
         owner: this.owner,
         repo: this.repoName,
         tag_name: this.tag
       });
+      Logger.info("Release notes generated");
       return notes.data.body;
     } catch {
+      Logger.info("Could not generate release notes \u2014 using empty body");
       return "";
     }
   }
@@ -24343,7 +24359,8 @@ var Release = class {
       throw new Error(`File not found: ${filePath}`);
     }
     const name = (0, import_path2.basename)(filePath);
-    step(`Uploading: ${name}`);
+    Logger.info(`Uploading: ${name}`);
+    Logger.info(`  File size: ${(0, import_fs2.readFileSync)(filePath).length} bytes`);
     const assetsResponse = await this.octokit.rest.repos.listReleaseAssets({
       owner: this.owner,
       repo: this.repoName,
@@ -24352,12 +24369,13 @@ var Release = class {
     });
     const existing = assetsResponse.data.find((a) => a.name === name);
     if (existing) {
+      Logger.info(`  Duplicate found \u2014 deleting existing asset: ${name}`);
       await this.octokit.rest.repos.deleteReleaseAsset({
         owner: this.owner,
         repo: this.repoName,
         asset_id: existing.id
       });
-      info2(`Deleted existing asset: ${name}`);
+      Logger.info("  Deleted");
     }
     const content = (0, import_fs2.readFileSync)(filePath);
     const response = await this.withRetry(
@@ -24374,8 +24392,7 @@ var Release = class {
       })
     );
     const asset = response.data;
-    success(`Uploaded: ${name} \u2192 ${asset.browser_download_url}`);
-    endGroup2();
+    Logger.success(`Uploaded: ${name} \u2192 ${asset.browser_download_url}`);
     return asset;
   }
   async withRetry(fn, maxRetries = 3) {
@@ -24385,9 +24402,11 @@ var Release = class {
         return await fn();
       } catch (err) {
         lastError = err;
-        warning2(`Attempt ${attempt}/${maxRetries} failed: ${err?.message || err}`);
+        Logger.warning(`Upload attempt ${attempt}/${maxRetries} failed: ${err.message}`);
         if (attempt < maxRetries) {
-          await new Promise((resolve2) => setTimeout(resolve2, Math.pow(2, attempt - 1) * 1e3));
+          const delay = Math.pow(2, attempt - 1) * 1e3;
+          Logger.info(`  Retrying in ${delay}ms...`);
+          await new Promise((resolve2) => setTimeout(resolve2, delay));
         }
       }
     }
@@ -24395,60 +24414,212 @@ var Release = class {
   }
 };
 
+// src/generate-updater.ts
+var github = __toESM(require_github());
+var UpdaterGenerator = class {
+  constructor(config) {
+    this.config = config;
+  }
+  createClient() {
+    const [owner, repoName] = this.config.parseRepo();
+    const octokit = github.getOctokit(this.config.token);
+    return { owner, repoName, octokit };
+  }
+  async fetchRelease(octokit, owner, repoName) {
+    Logger.info(`Fetching release for tag: ${this.config.tag}`);
+    const { data: release } = await octokit.rest.repos.getReleaseByTag({
+      owner,
+      repo: repoName,
+      tag: this.config.tag
+    });
+    Logger.info(`Found release ID: ${release.id}`);
+    return release;
+  }
+  async listAssets(octokit, owner, repoName, releaseId) {
+    Logger.info("Listing release assets...");
+    const { data: assets } = await octokit.rest.repos.listReleaseAssets({
+      owner,
+      repo: repoName,
+      release_id: releaseId,
+      per_page: 100
+    });
+    Logger.info(`Found ${assets.length} asset(s) total`);
+    return assets;
+  }
+  async collectPlatforms(octokit, owner, repoName, assets) {
+    const sigAssets = assets.filter((a) => a.name.endsWith(EXT.SIG));
+    Logger.info(`Found ${sigAssets.length} ${EXT.SIG} file(s)`);
+    const platforms = {};
+    for (const sigAsset of sigAssets) {
+      const archiveName = sigAsset.name.replace(/\.sig$/, "");
+      Logger.info(`Processing: ${sigAsset.name}`);
+      const platform = this.inferPlatform(archiveName);
+      if (!platform) {
+        Logger.info(`  \u21B3 Skipping \u2014 could not infer platform from name`);
+        continue;
+      }
+      Logger.info(`  \u21B3 Platform: ${platform}`);
+      Logger.info(`  \u21B3 Downloading signature...`);
+      const sigResponse = await octokit.rest.repos.getReleaseAsset({
+        owner,
+        repo: repoName,
+        asset_id: sigAsset.id,
+        headers: { accept: "application/octet-stream" }
+      });
+      const signature = String(sigResponse.data).trim();
+      Logger.info(`  \u21B3 Signature length: ${signature.length} chars`);
+      const downloadUrl = `https://github.com/${this.config.repo}/releases/latest/download/${encodeURIComponent(archiveName)}`;
+      Logger.info(`  \u21B3 Download URL: ${downloadUrl}`);
+      platforms[platform] = { signature, url: downloadUrl };
+    }
+    if (Object.keys(platforms).length === 0) {
+      throw new Error("No .sig files found in release");
+    }
+    Logger.info(`Resolved platforms: ${Object.keys(platforms).join(", ")}`);
+    return platforms;
+  }
+  buildUpdaterJson(platforms) {
+    const version = this.config.tag.replace(/^v/, "");
+    const updater = {
+      version,
+      notes: "",
+      pub_date: (/* @__PURE__ */ new Date()).toISOString(),
+      platforms
+    };
+    const content = JSON.stringify(updater, null, 2);
+    Logger.info(`updater.json:
+${content}`);
+    return content;
+  }
+  async uploadUpdaterJson(octokit, owner, repoName, releaseId, assets, updaterContent) {
+    Logger.info("Uploading updater.json to release...");
+    const existingUpdater = assets.find((a) => a.name === "updater.json");
+    if (existingUpdater) {
+      Logger.info("Deleting existing updater.json...");
+      await octokit.rest.repos.deleteReleaseAsset({
+        owner,
+        repo: repoName,
+        asset_id: existingUpdater.id
+      });
+      Logger.info("Deleted");
+    }
+    await octokit.rest.repos.uploadReleaseAsset({
+      owner,
+      repo: repoName,
+      release_id: releaseId,
+      name: "updater.json",
+      data: Buffer.from(updaterContent, "utf-8"),
+      headers: {
+        "content-type": "application/json",
+        "content-length": Buffer.byteLength(updaterContent, "utf-8")
+      }
+    });
+  }
+  inferPlatform(assetName) {
+    const lower = assetName.toLowerCase();
+    if (lower.includes(ARCH.AARCH64) || lower.includes(ARCH_ALIASES.ARM64)) {
+      if (lower.endsWith(EXT.TAR_GZ) || lower.includes(EXT.APP)) return PLATFORMS.DARWIN_AARCH64;
+      if (lower.endsWith(EXT.APPIMAGE) || lower.endsWith(EXT.DEB)) return PLATFORMS.LINUX_AARCH64;
+    }
+    if (lower.includes(ARCH.X86_64) || lower.includes(ARCH_ALIASES.X64) || lower.includes(ARCH_ALIASES.AMD64) || lower.includes(ARCH_ALIASES.INTEL)) {
+      if (lower.endsWith(EXT.TAR_GZ) || lower.includes(EXT.APP)) return PLATFORMS.DARWIN_X86_64;
+      if (lower.endsWith(EXT.MSI) || lower.endsWith(EXT.EXE)) return PLATFORMS.WINDOWS_X86_64;
+      if (lower.endsWith(EXT.APPIMAGE) || lower.endsWith(EXT.DEB)) return PLATFORMS.LINUX_X86_64;
+    }
+    return null;
+  }
+};
+
+// src/workflow.ts
+var Workflow = class {
+  async runBuild(config) {
+    Logger.step("Building Tauri app");
+    const buildResult = await Builder.run(
+      config.projectPath,
+      config.target,
+      config.privateKey,
+      config.args
+    );
+    core3.setOutput("version", buildResult.appVersion);
+    Logger.info(`Set output version=${buildResult.appVersion}`);
+    Logger.endGroup();
+    const uploadPaths = buildResult.artifacts.map((a) => a.path);
+    Logger.info("Files to upload:");
+    for (const p of uploadPaths) {
+      Logger.info(`  ${p}`);
+    }
+    Logger.step("Ensuring GitHub Release");
+    const [owner, repoName] = config.parseRepo();
+    Logger.info(`Repository: ${owner}/${repoName}`);
+    Logger.info(`Tag: ${config.tag}`);
+    const octokit = github2.getOctokit(config.token);
+    const release = new Release(octokit, owner, repoName, config.tag);
+    const releaseId = await release.ensureRelease(config.releaseBody);
+    core3.setOutput("releaseId", String(releaseId));
+    Logger.info(`Set output releaseId=${releaseId}`);
+    Logger.endGroup();
+    Logger.step("Uploading artifacts");
+    const uploaded = await release.uploadAll(uploadPaths);
+    Logger.info(`Uploaded ${uploaded.length} file(s)`);
+    Logger.endGroup();
+    const platform = Target.toPlatform(config.target);
+    core3.setOutput("platform", platform);
+    Logger.info(`Set output platform=${platform}`);
+    const sigArtifact = buildResult.artifacts.find((a) => a.type === "signature");
+    if (sigArtifact) {
+      const sig = Builder.readSignature(sigArtifact.path);
+      core3.setOutput("signature", sig);
+      Logger.info(`Set output signature (from ${sigArtifact.name})`);
+    } else {
+      Logger.info("No signature artifact found");
+    }
+    const archiveArtifact = buildResult.artifacts.find(
+      (a) => a.type === "archive" || a.type === "installer"
+    );
+    if (archiveArtifact) {
+      const url = `https://github.com/${config.repo}/releases/latest/download/${encodeURIComponent(archiveArtifact.name)}`;
+      core3.setOutput("downloadUrl", url);
+      core3.setOutput("archiveName", archiveArtifact.name);
+      Logger.info(`Set output downloadUrl=${url}`);
+      Logger.info(`Set output archiveName=${archiveArtifact.name}`);
+    }
+    Logger.success("Build and upload complete!");
+  }
+  async runGenerateUpdater(config) {
+    if (!config.token) throw new Error("token is required");
+    if (!config.tag) throw new Error("tag is required");
+    Logger.step("Generating updater.json");
+    const generator = new UpdaterGenerator(config);
+    const { owner, repoName, octokit } = generator.createClient();
+    const release = await generator.fetchRelease(octokit, owner, repoName);
+    const assets = await generator.listAssets(octokit, owner, repoName, release.id);
+    const platforms = await generator.collectPlatforms(octokit, owner, repoName, assets);
+    const updaterContent = generator.buildUpdaterJson(platforms);
+    await generator.uploadUpdaterJson(octokit, owner, repoName, release.id, assets, updaterContent);
+    Logger.success("updater.json generated and uploaded");
+    Logger.endGroup();
+  }
+};
+
 // src/index.ts
-async function runBuild(config) {
-  step("Building Tauri app");
-  const buildResult = await buildTauri(
-    config.projectPath,
-    config.target,
-    config.privateKey,
-    config.args
-  );
-  core4.setOutput("version", buildResult.appVersion);
-  endGroup2();
-  const uploadPaths = buildResult.artifacts.map((a) => a.path);
-  info2("Files to upload:");
-  for (const p of uploadPaths) {
-    info2(`  ${p}`);
-  }
-  const [owner, repoName] = config.parseRepo();
-  const octokit = github2.getOctokit(config.token);
-  const release = new Release(octokit, owner, repoName, config.tag);
-  const releaseId = await release.ensureRelease(config.releaseBody);
-  core4.setOutput("releaseId", String(releaseId));
-  step("Uploading artifacts");
-  await release.uploadAll(uploadPaths);
-  endGroup2();
-  const platform = targetToPlatform(config.target);
-  core4.setOutput("platform", platform);
-  const sigArtifact = buildResult.artifacts.find((a) => a.type === "signature");
-  if (sigArtifact) {
-    core4.setOutput("signature", readSignature(sigArtifact.path));
-  }
-  const archiveArtifact = buildResult.artifacts.find(
-    (a) => a.type === "archive" || a.type === "installer"
-  );
-  if (archiveArtifact) {
-    const url = `https://github.com/${config.repo}/releases/latest/download/${encodeURIComponent(archiveArtifact.name)}`;
-    core4.setOutput("downloadUrl", url);
-    core4.setOutput("archiveName", archiveArtifact.name);
-  }
-  success("Build and upload complete!");
-}
 async function main() {
   try {
     const config = new Config();
     const command = core4.getInput("command") || "build";
-    info2(`Command: ${command}`);
-    info2(`Tag: ${config.tag}`);
-    info2(`Repo: ${config.repo}`);
+    Logger.info(`Command: ${command}`);
+    Logger.info(`Tag: ${config.tag}`);
+    Logger.info(`Repo: ${config.repo}`);
+    Logger.info(`Target: ${config.target || "(not set \u2014 only needed for build)"}`);
     if (command === "generate-updater") {
-      if (!config.token) throw new Error("token is required");
-      if (!config.tag) throw new Error("tag is required");
-      await runGenerateUpdater(config);
+      config.validate();
+      Logger.step("Generate updater command");
+      await new Workflow().runGenerateUpdater(config);
+      Logger.endGroup();
     } else {
       config.validate();
-      await runBuild(config);
+      Logger.step("Build command");
+      await new Workflow().runBuild(config);
+      Logger.endGroup();
     }
   } catch (err) {
     const message = err?.message ?? String(err);
