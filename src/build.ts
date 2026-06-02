@@ -66,13 +66,11 @@ export async function buildTauri(
 
   // Build
   const runner = findRunner(root);
-  const cmdArgs = [runner === 'npm' ? 'run' : 'tauri', 'tauri', 'build', '--target', target];
-  if (extraArgs) {
-    cmdArgs.push(...extraArgs.split(/\s+/).filter(Boolean));
-  }
-
   const cmd = runner === 'npm' ? 'npx' : runner;
-  const execArgs = runner === 'npm' ? cmdArgs : ['tauri', 'build', '--target', target].concat(extraArgs ? extraArgs.split(/\s+/).filter(Boolean) : []);
+  const execArgs = ['tauri', 'build', '--target', target];
+  if (extraArgs) {
+    execArgs.push(...extraArgs.split(/\s+/).filter(Boolean));
+  }
 
   step(`Running: ${cmd} ${execArgs.join(' ')}`);
   const exitCode = await exec(cmd, execArgs, { cwd: root, env });

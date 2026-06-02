@@ -31,7 +31,7 @@ export class Config implements ActionConfig {
     this.repo = core.getInput('repo') || process.env.GITHUB_REPOSITORY || '';
     this.target = core.getInput('target');
     this.privateKey = core.getInput('privateKey') || '';
-    this.releaseBody = core.getInput('release_body');
+    this.releaseBody = core.getInput('releaseBody');
     this.projectPath = core.getInput('projectPath');
     this.args = core.getInput('args') || '';
     this.eventName = process.env.GITHUB_EVENT_NAME || '';
