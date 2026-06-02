@@ -9,8 +9,6 @@ export interface ActionConfig {
   releaseBody: string;
   projectPath: string;
   args: string;
-  eventName: string;
-  ref: string;
 }
 
 export class Config implements ActionConfig {
@@ -22,8 +20,6 @@ export class Config implements ActionConfig {
   readonly releaseBody: string;
   readonly projectPath: string;
   readonly args: string;
-  readonly eventName: string;
-  readonly ref: string;
 
   constructor() {
     this.token = core.getInput('token') || process.env.GITHUB_TOKEN || '';
@@ -34,8 +30,6 @@ export class Config implements ActionConfig {
     this.releaseBody = core.getInput('releaseBody');
     this.projectPath = core.getInput('projectPath');
     this.args = core.getInput('args') || '';
-    this.eventName = process.env.GITHUB_EVENT_NAME || '';
-    this.ref = process.env.GITHUB_REF || '';
   }
 
   validate(): void {

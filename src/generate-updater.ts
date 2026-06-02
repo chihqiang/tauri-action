@@ -1,7 +1,6 @@
-import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { Config } from './config';
-import { info, success, step, endGroup, error } from './log';
+import { info, success, step, endGroup } from './log';
 
 interface UpdaterPlatform {
   signature: string;

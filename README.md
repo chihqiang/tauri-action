@@ -79,6 +79,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+      
+      - name: Install frontend dependencies
+        run: npm install
 
       - name: Build & upload
         uses: chihqiang/tauri-action@main

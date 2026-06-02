@@ -426,18 +426,18 @@ var require_tunnel = __commonJS({
             res.statusCode
           );
           socket.destroy();
-          var error4 = new Error("tunneling socket could not be established, statusCode=" + res.statusCode);
-          error4.code = "ECONNRESET";
-          options.request.emit("error", error4);
+          var error3 = new Error("tunneling socket could not be established, statusCode=" + res.statusCode);
+          error3.code = "ECONNRESET";
+          options.request.emit("error", error3);
           self.removeSocket(placeholder);
           return;
         }
         if (head.length > 0) {
           debug("got illegal response body from proxy");
           socket.destroy();
-          var error4 = new Error("got illegal response body from proxy");
-          error4.code = "ECONNRESET";
-          options.request.emit("error", error4);
+          var error3 = new Error("got illegal response body from proxy");
+          error3.code = "ECONNRESET";
+          options.request.emit("error", error3);
           self.removeSocket(placeholder);
           return;
         }
@@ -452,9 +452,9 @@ var require_tunnel = __commonJS({
           cause.message,
           cause.stack
         );
-        var error4 = new Error("tunneling socket could not be established, cause=" + cause.message);
-        error4.code = "ECONNRESET";
-        options.request.emit("error", error4);
+        var error3 = new Error("tunneling socket could not be established, cause=" + cause.message);
+        error3.code = "ECONNRESET";
+        options.request.emit("error", error3);
         self.removeSocket(placeholder);
       }
     };
@@ -5585,7 +5585,7 @@ Content-Type: ${value.type || "application/octet-stream"}\r
         throw new TypeError("Body is unusable");
       }
       const promise = createDeferredPromise();
-      const errorSteps = (error4) => promise.reject(error4);
+      const errorSteps = (error3) => promise.reject(error3);
       const successSteps = (data) => {
         try {
           promise.resolve(convertBytesToJSValue(data));
@@ -5871,16 +5871,16 @@ var require_request = __commonJS({
           this.onError(err);
         }
       }
-      onError(error4) {
+      onError(error3) {
         this.onFinally();
         if (channels.error.hasSubscribers) {
-          channels.error.publish({ request: this, error: error4 });
+          channels.error.publish({ request: this, error: error3 });
         }
         if (this.aborted) {
           return;
         }
         this.aborted = true;
-        return this[kHandler].onError(error4);
+        return this[kHandler].onError(error3);
       }
       onFinally() {
         if (this.errorHandler) {
@@ -6743,8 +6743,8 @@ var require_RedirectHandler = __commonJS({
       onUpgrade(statusCode, headers, socket) {
         this.handler.onUpgrade(statusCode, headers, socket);
       }
-      onError(error4) {
-        this.handler.onError(error4);
+      onError(error3) {
+        this.handler.onError(error3);
       }
       onHeaders(statusCode, headers, resume, statusText) {
         this.location = this.history.length >= this.maxRedirections || util.isDisturbed(this.opts.body) ? null : parseLocation(statusCode, headers);
@@ -8888,7 +8888,7 @@ var require_pool = __commonJS({
         this[kOptions] = { ...util.deepClone(options), connect, allowH2 };
         this[kOptions].interceptors = options.interceptors ? { ...options.interceptors } : void 0;
         this[kFactory] = factory;
-        this.on("connectionError", (origin2, targets, error4) => {
+        this.on("connectionError", (origin2, targets, error3) => {
           for (const target of targets) {
             const idx = this[kClients].indexOf(target);
             if (idx !== -1) {
@@ -10499,13 +10499,13 @@ var require_mock_utils = __commonJS({
       if (mockDispatch2.data.callback) {
         mockDispatch2.data = { ...mockDispatch2.data, ...mockDispatch2.data.callback(opts) };
       }
-      const { data: { statusCode, data, headers, trailers, error: error4 }, delay, persist } = mockDispatch2;
+      const { data: { statusCode, data, headers, trailers, error: error3 }, delay, persist } = mockDispatch2;
       const { timesInvoked, times } = mockDispatch2;
       mockDispatch2.consumed = !persist && timesInvoked >= times;
       mockDispatch2.pending = timesInvoked < times;
-      if (error4 !== null) {
+      if (error3 !== null) {
         deleteMockDispatch(this[kDispatches], key);
-        handler2.onError(error4);
+        handler2.onError(error3);
         return true;
       }
       if (typeof delay === "number" && delay > 0) {
@@ -10543,19 +10543,19 @@ var require_mock_utils = __commonJS({
         if (agent.isMockActive) {
           try {
             mockDispatch.call(this, opts, handler2);
-          } catch (error4) {
-            if (error4 instanceof MockNotMatchedError) {
+          } catch (error3) {
+            if (error3 instanceof MockNotMatchedError) {
               const netConnect = agent[kGetNetConnect]();
               if (netConnect === false) {
-                throw new MockNotMatchedError(`${error4.message}: subsequent request to origin ${origin} was not allowed (net.connect disabled)`);
+                throw new MockNotMatchedError(`${error3.message}: subsequent request to origin ${origin} was not allowed (net.connect disabled)`);
               }
               if (checkNetConnect(netConnect, origin)) {
                 originalDispatch.call(this, opts, handler2);
               } else {
-                throw new MockNotMatchedError(`${error4.message}: subsequent request to origin ${origin} was not allowed (net.connect is not enabled for this origin)`);
+                throw new MockNotMatchedError(`${error3.message}: subsequent request to origin ${origin} was not allowed (net.connect is not enabled for this origin)`);
               }
             } else {
-              throw error4;
+              throw error3;
             }
           }
         } else {
@@ -10718,11 +10718,11 @@ var require_mock_interceptor = __commonJS({
       /**
        * Mock an undici request with a defined error.
        */
-      replyWithError(error4) {
-        if (typeof error4 === "undefined") {
+      replyWithError(error3) {
+        if (typeof error3 === "undefined") {
           throw new InvalidArgumentError("error must be defined");
         }
-        const newMockDispatch = addMockDispatch(this[kDispatches], this[kDispatchKey], { error: error4 });
+        const newMockDispatch = addMockDispatch(this[kDispatches], this[kDispatchKey], { error: error3 });
         return new MockScope(newMockDispatch);
       }
       /**
@@ -13050,17 +13050,17 @@ var require_fetch = __commonJS({
         this.emit("terminated", reason);
       }
       // https://fetch.spec.whatwg.org/#fetch-controller-abort
-      abort(error4) {
+      abort(error3) {
         if (this.state !== "ongoing") {
           return;
         }
         this.state = "aborted";
-        if (!error4) {
-          error4 = new DOMException2("The operation was aborted.", "AbortError");
+        if (!error3) {
+          error3 = new DOMException2("The operation was aborted.", "AbortError");
         }
-        this.serializedAbortReason = error4;
-        this.connection?.destroy(error4);
-        this.emit("terminated", error4);
+        this.serializedAbortReason = error3;
+        this.connection?.destroy(error3);
+        this.emit("terminated", error3);
       }
     };
     function fetch(input, init = {}) {
@@ -13164,13 +13164,13 @@ var require_fetch = __commonJS({
         performance.markResourceTiming(timingInfo, originalURL.href, initiatorType, globalThis2, cacheState);
       }
     }
-    function abortFetch(p, request2, responseObject, error4) {
-      if (!error4) {
-        error4 = new DOMException2("The operation was aborted.", "AbortError");
+    function abortFetch(p, request2, responseObject, error3) {
+      if (!error3) {
+        error3 = new DOMException2("The operation was aborted.", "AbortError");
       }
-      p.reject(error4);
+      p.reject(error3);
       if (request2.body != null && isReadable(request2.body?.stream)) {
-        request2.body.stream.cancel(error4).catch((err) => {
+        request2.body.stream.cancel(error3).catch((err) => {
           if (err.code === "ERR_INVALID_STATE") {
             return;
           }
@@ -13182,7 +13182,7 @@ var require_fetch = __commonJS({
       }
       const response = responseObject[kState];
       if (response.body != null && isReadable(response.body?.stream)) {
-        response.body.stream.cancel(error4).catch((err) => {
+        response.body.stream.cancel(error3).catch((err) => {
           if (err.code === "ERR_INVALID_STATE") {
             return;
           }
@@ -13962,13 +13962,13 @@ var require_fetch = __commonJS({
               fetchParams.controller.ended = true;
               this.body.push(null);
             },
-            onError(error4) {
+            onError(error3) {
               if (this.abort) {
                 fetchParams.controller.off("terminated", this.abort);
               }
-              this.body?.destroy(error4);
-              fetchParams.controller.terminate(error4);
-              reject(error4);
+              this.body?.destroy(error3);
+              fetchParams.controller.terminate(error3);
+              reject(error3);
             },
             onUpgrade(status, headersList, socket) {
               if (status !== 101) {
@@ -14434,8 +14434,8 @@ var require_util4 = __commonJS({
                   }
                   fr[kResult] = result;
                   fireAProgressEvent("load", fr);
-                } catch (error4) {
-                  fr[kError] = error4;
+                } catch (error3) {
+                  fr[kError] = error3;
                   fireAProgressEvent("error", fr);
                 }
                 if (fr[kState] !== "loading") {
@@ -14444,13 +14444,13 @@ var require_util4 = __commonJS({
               });
               break;
             }
-          } catch (error4) {
+          } catch (error3) {
             if (fr[kAborted]) {
               return;
             }
             queueMicrotask(() => {
               fr[kState] = "done";
-              fr[kError] = error4;
+              fr[kError] = error3;
               fireAProgressEvent("error", fr);
               if (fr[kState] !== "loading") {
                 fireAProgressEvent("loadend", fr);
@@ -16450,11 +16450,11 @@ var require_connection = __commonJS({
         });
       }
     }
-    function onSocketError(error4) {
+    function onSocketError(error3) {
       const { ws } = this;
       ws[kReadyState] = states.CLOSING;
       if (channels.socketError.hasSubscribers) {
-        channels.socketError.publish(error4);
+        channels.socketError.publish(error3);
       }
       this.destroy();
     }
@@ -18086,12 +18086,12 @@ var require_oidc_utils = __commonJS({
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
           const httpclient = _OidcClient.createHttpClient();
-          const res = yield httpclient.getJson(id_token_url).catch((error4) => {
+          const res = yield httpclient.getJson(id_token_url).catch((error3) => {
             throw new Error(`Failed to get ID Token. 
  
-        Error Code : ${error4.statusCode}
+        Error Code : ${error3.statusCode}
  
-        Error Message: ${error4.message}`);
+        Error Message: ${error3.message}`);
           });
           const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
           if (!id_token) {
@@ -18112,8 +18112,8 @@ var require_oidc_utils = __commonJS({
             const id_token = yield _OidcClient.getCall(id_token_url);
             (0, core_1.setSecret)(id_token);
             return id_token;
-          } catch (error4) {
-            throw new Error(`Error message: ${error4.message}`);
+          } catch (error3) {
+            throw new Error(`Error message: ${error3.message}`);
           }
         });
       }
@@ -19235,7 +19235,7 @@ var require_toolrunner = __commonJS({
               this._debug(`STDIO streams have closed for tool '${this.toolPath}'`);
               state.CheckComplete();
             });
-            state.on("done", (error4, exitCode) => {
+            state.on("done", (error3, exitCode) => {
               if (stdbuffer.length > 0) {
                 this.emit("stdline", stdbuffer);
               }
@@ -19243,8 +19243,8 @@ var require_toolrunner = __commonJS({
                 this.emit("errline", errbuffer);
               }
               cp.removeAllListeners();
-              if (error4) {
-                reject(error4);
+              if (error3) {
+                reject(error3);
               } else {
                 resolve2(exitCode);
               }
@@ -19339,14 +19339,14 @@ var require_toolrunner = __commonJS({
         this.emit("debug", message);
       }
       _setResult() {
-        let error4;
+        let error3;
         if (this.processExited) {
           if (this.processError) {
-            error4 = new Error(`There was an error when attempting to execute the process '${this.toolPath}'. This may indicate the process failed to start. Error: ${this.processError}`);
+            error3 = new Error(`There was an error when attempting to execute the process '${this.toolPath}'. This may indicate the process failed to start. Error: ${this.processError}`);
           } else if (this.processExitCode !== 0 && !this.options.ignoreReturnCode) {
-            error4 = new Error(`The process '${this.toolPath}' failed with exit code ${this.processExitCode}`);
+            error3 = new Error(`The process '${this.toolPath}' failed with exit code ${this.processExitCode}`);
           } else if (this.processStderr && this.options.failOnStdErr) {
-            error4 = new Error(`The process '${this.toolPath}' failed because one or more lines were written to the STDERR stream`);
+            error3 = new Error(`The process '${this.toolPath}' failed because one or more lines were written to the STDERR stream`);
           }
         }
         if (this.timeout) {
@@ -19354,7 +19354,7 @@ var require_toolrunner = __commonJS({
           this.timeout = null;
         }
         this.done = true;
-        this.emit("done", error4, this.processExitCode);
+        this.emit("done", error3, this.processExitCode);
       }
       static HandleTimeout(state) {
         if (state.done) {
@@ -19737,7 +19737,7 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
     exports2.setCommandEcho = setCommandEcho;
     function setFailed3(message) {
       process.exitCode = ExitCode.Failure;
-      error4(message);
+      error3(message);
     }
     exports2.setFailed = setFailed3;
     function isDebug() {
@@ -19748,10 +19748,10 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       (0, command_1.issueCommand)("debug", {}, message);
     }
     exports2.debug = debug;
-    function error4(message, properties = {}) {
+    function error3(message, properties = {}) {
       (0, command_1.issueCommand)("error", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
-    exports2.error = error4;
+    exports2.error = error3;
     function warning3(message, properties = {}) {
       (0, command_1.issueCommand)("warning", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
@@ -20053,8 +20053,8 @@ var require_add = __commonJS({
       }
       if (kind === "error") {
         hook2 = function(method, options) {
-          return Promise.resolve().then(method.bind(null, options)).catch(function(error4) {
-            return orig(error4, options);
+          return Promise.resolve().then(method.bind(null, options)).catch(function(error3) {
+            return orig(error3, options);
           });
         };
       }
@@ -20847,7 +20847,7 @@ function fetchWrapper(requestOptions) {
     }
     if (status >= 400) {
       const data = await getResponseData(response);
-      const error4 = new RequestError(toErrorMessage(data), status, {
+      const error3 = new RequestError(toErrorMessage(data), status, {
         response: {
           url,
           status,
@@ -20856,7 +20856,7 @@ function fetchWrapper(requestOptions) {
         },
         request: requestOptions
       });
-      throw error4;
+      throw error3;
     }
     return parseSuccessResponseBody ? await getResponseData(response) : response.body;
   }).then((data) => {
@@ -20866,17 +20866,17 @@ function fetchWrapper(requestOptions) {
       headers,
       data
     };
-  }).catch((error4) => {
-    if (error4 instanceof RequestError)
-      throw error4;
-    else if (error4.name === "AbortError")
-      throw error4;
-    let message = error4.message;
-    if (error4.name === "TypeError" && "cause" in error4) {
-      if (error4.cause instanceof Error) {
-        message = error4.cause.message;
-      } else if (typeof error4.cause === "string") {
-        message = error4.cause;
+  }).catch((error3) => {
+    if (error3 instanceof RequestError)
+      throw error3;
+    else if (error3.name === "AbortError")
+      throw error3;
+    let message = error3.message;
+    if (error3.name === "TypeError" && "cause" in error3) {
+      if (error3.cause instanceof Error) {
+        message = error3.cause.message;
+      } else if (typeof error3.cause === "string") {
+        message = error3.cause;
       }
     }
     throw new RequestError(message, 500, {
@@ -23523,9 +23523,9 @@ function iterator(octokit, route, parameters) {
             /<([^<>]+)>;\s*rel="next"/
           ) || [])[1];
           return { value: normalizedResponse };
-        } catch (error4) {
-          if (error4.status !== 409)
-            throw error4;
+        } catch (error3) {
+          if (error3.status !== 409)
+            throw error3;
           url = "";
           return {
             value: {
@@ -23951,8 +23951,6 @@ var Config = class {
     this.releaseBody = core.getInput("releaseBody");
     this.projectPath = core.getInput("projectPath");
     this.args = core.getInput("args") || "";
-    this.eventName = process.env.GITHUB_EVENT_NAME || "";
-    this.ref = process.env.GITHUB_REF || "";
   }
   validate() {
     if (!this.token) {
@@ -24028,6 +24026,8 @@ async function buildTauri(projectPath, target, privateKey, extraArgs) {
   const env = { ...process.env };
   if (privateKey) {
     env["TAURI_PRIVATE_KEY"] = privateKey;
+    env["TAURI_SIGNING_PRIVATE_KEY"] = privateKey;
+    env["TAURI_SIGNING_PRIVATE_KEY_PASSWORD"] = process.env.TAURI_PRIVATE_KEY_PASSWORD || "";
   }
   const runner = findRunner(root);
   const cmd = runner === "npm" ? "npx" : runner;
@@ -24092,9 +24092,12 @@ async function buildTauri(projectPath, target, privateKey, extraArgs) {
       const appDir = (0, import_fs.readdirSync)(macosDir).find((f) => f.endsWith(".app"));
       if (appDir) {
         info2(`Creating ${appDir}.tar.gz...`);
-        const tarName = `${appDir}.tar.gz`;
-        await (0, import_exec.exec)("tar", ["czf", (0, import_path.join)(macosDir, tarName), "-C", macosDir, appDir], { cwd: macosDir });
+        const tarPath = (0, import_path.join)(macosDir, `${appDir}.tar.gz`);
+        await (0, import_exec.exec)("tar", ["czf", tarPath, "-C", macosDir, appDir], { cwd: macosDir });
         hasTarGz = true;
+        if (privateKey) {
+          await tryGenerateSignature(tarPath, runner, root, env);
+        }
       }
     }
     if (hasTarGz) {
@@ -24128,10 +24131,37 @@ async function buildTauri(projectPath, target, privateKey, extraArgs) {
           artifacts.push({ path: (0, import_path.join)(macosDir, name), name, type: "signature" });
         }
       }
+      if (privateKey) {
+        for (const a of artifacts) {
+          if (a.type === "archive") {
+            const sigName = `${a.name}.sig`;
+            if (!(0, import_fs.existsSync)((0, import_path.join)(macosDir, sigName))) {
+              const ok = await tryGenerateSignature(a.path, runner, root, env);
+              if (ok) {
+                artifacts.push({ path: (0, import_path.join)(macosDir, sigName), name: sigName, type: "signature" });
+              }
+            }
+          }
+        }
+      }
     }
   }
   success(`Collected ${artifacts.length} artifact(s)`);
   return { artifacts, appVersion };
+}
+async function tryGenerateSignature(filePath, runner, root, env) {
+  try {
+    const cmd = runner === "npm" ? "npx" : runner;
+    const exitCode = await (0, import_exec.exec)(cmd, ["tauri", "signer", "sign", filePath], { env, cwd: root });
+    if (exitCode !== 0) {
+      throw new Error(`tauri signer sign exited with code ${exitCode}`);
+    }
+    info2(`Generated signature: ${filePath}.sig`);
+    return true;
+  } catch (err) {
+    warning2(`Failed to generate .sig: ${err.message}`);
+    return false;
+  }
 }
 function readSignature(sigPath) {
   const content = (0, import_fs.readFileSync)(sigPath, "utf-8").trim();

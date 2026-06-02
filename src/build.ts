@@ -1,7 +1,7 @@
 import { exec } from '@actions/exec';
 import { existsSync, readFileSync, readdirSync, renameSync } from 'fs';
 import { join, resolve } from 'path';
-import { info, step, endGroup, success } from './log';
+import { info, warning, step, endGroup, success } from './log';
 
 export interface BundleArtifact {
   /** Absolute path to the file */
@@ -62,6 +62,8 @@ export async function buildTauri(
   const env: Record<string, string> = { ...process.env } as Record<string, string>;
   if (privateKey) {
     env['TAURI_PRIVATE_KEY'] = privateKey;
+    env['TAURI_SIGNING_PRIVATE_KEY'] = privateKey;
+    env['TAURI_SIGNING_PRIVATE_KEY_PASSWORD'] = process.env.TAURI_PRIVATE_KEY_PASSWORD || '';
   }
 
   // Build
@@ -146,9 +148,13 @@ export async function buildTauri(
       const appDir = readdirSync(macosDir).find(f => f.endsWith('.app'));
       if (appDir) {
         info(`Creating ${appDir}.tar.gz...`);
-        const tarName = `${appDir}.tar.gz`;
-        await exec('tar', ['czf', join(macosDir, tarName), '-C', macosDir, appDir], { cwd: macosDir });
+        const tarPath = join(macosDir, `${appDir}.tar.gz`);
+        await exec('tar', ['czf', tarPath, '-C', macosDir, appDir], { cwd: macosDir });
         hasTarGz = true;
+        // Generate .sig if private key provided
+        if (privateKey) {
+          await tryGenerateSignature(tarPath, runner, root, env);
+        }
       }
     }
 
@@ -156,7 +162,6 @@ export async function buildTauri(
       for (const f of readdirSync(macosDir)) {
         if (f.endsWith('.tar.gz')) {
           let name = f;
-          // Rename to include arch for matrix builds
           if (!name.includes('aarch64') && !name.includes('x86_64')) {
             const suffix = archSuffix(target);
             if (suffix) {
@@ -184,6 +189,20 @@ export async function buildTauri(
           artifacts.push({ path: join(macosDir, name), name, type: 'signature' });
         }
       }
+      // Generate .sig for any archives still missing one
+      if (privateKey) {
+        for (const a of artifacts) {
+          if (a.type === 'archive') {
+            const sigName = `${a.name}.sig`;
+            if (!existsSync(join(macosDir, sigName))) {
+              const ok = await tryGenerateSignature(a.path, runner, root, env);
+              if (ok) {
+                artifacts.push({ path: join(macosDir, sigName), name: sigName, type: 'signature' });
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -191,13 +210,29 @@ export async function buildTauri(
   return { artifacts, appVersion };
 }
 
+async function tryGenerateSignature(
+  filePath: string,
+  runner: string,
+  root: string,
+  env: Record<string, string>,
+): Promise<boolean> {
+  try {
+    const cmd = runner === 'npm' ? 'npx' : runner;
+    const exitCode = await exec(cmd, ['tauri', 'signer', 'sign', filePath], { env, cwd: root });
+    if (exitCode !== 0) {
+      throw new Error(`tauri signer sign exited with code ${exitCode}`);
+    }
+    info(`Generated signature: ${filePath}.sig`);
+    return true;
+  } catch (err) {
+    warning(`Failed to generate .sig: ${(err as Error).message}`);
+    return false;
+  }
+}
+
 export function readSignature(sigPath: string): string {
   const content = readFileSync(sigPath, 'utf-8').trim();
   return content;
 }
 
-export interface UpdateEntry {
-  platform: string;
-  signature: string;
-  url: string;
-}
+
