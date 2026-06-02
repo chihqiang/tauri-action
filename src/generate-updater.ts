@@ -87,7 +87,15 @@ export class UpdaterGenerator {
         asset_id: sigAsset.id,
         headers: { accept: 'application/octet-stream' },
       });
-      const signature = String(sigResponse.data).trim();
+      const raw = sigResponse.data as unknown;
+      let signature: string;
+      if (raw instanceof ArrayBuffer) {
+        signature = Buffer.from(raw).toString('utf-8').trim();
+      } else if (Buffer.isBuffer(raw)) {
+        signature = raw.toString('utf-8').trim();
+      } else {
+        signature = String(raw).trim();
+      }
       Logger.info(`  ↳ Signature length: ${signature.length} chars`);
 
       const downloadUrl = `https://github.com/${this.config.repo}/releases/latest/download/${encodeURIComponent(archiveName)}`;
