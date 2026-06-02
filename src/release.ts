@@ -1,6 +1,6 @@
-import { GitHub } from '@actions/github/lib/utils';
 import { existsSync, readFileSync } from 'fs';
 import { basename } from 'path';
+import { GitHubClient } from './github';
 import { Logger } from './log';
 
 export interface Asset {
@@ -9,14 +9,14 @@ export interface Asset {
 }
 
 export class Release {
-  private octokit: InstanceType<typeof GitHub>;
+  private client: GitHubClient;
   private owner: string;
   private repoName: string;
   private tag: string;
   private releaseId: number | null = null;
 
-  constructor(octokit: InstanceType<typeof GitHub>, owner: string, repoName: string, tag: string) {
-    this.octokit = octokit;
+  constructor(client: GitHubClient, owner: string, repoName: string, tag: string) {
+    this.client = client;
     this.owner = owner;
     this.repoName = repoName;
     this.tag = tag;
@@ -39,16 +39,8 @@ export class Release {
       Logger.info('Using auto-generated release notes');
     }
 
-    const response = await this.octokit.rest.repos.createRelease({
-      owner: this.owner,
-      repo: this.repoName,
-      tag_name: this.tag,
-      name: this.tag,
-      body: releaseBody,
-      draft: false,
-      prerelease: false,
-    });
-    this.releaseId = response.data.id;
+    const data = await this.client.createRelease(this.owner, this.repoName, this.tag, releaseBody);
+    this.releaseId = data.id;
     Logger.success(`Created release ID: ${this.releaseId}`);
     return this.releaseId;
   }
@@ -79,13 +71,9 @@ export class Release {
 
   private async getReleaseByTag(): Promise<number | null> {
     try {
-      const response = await this.octokit.rest.repos.getReleaseByTag({
-        owner: this.owner,
-        repo: this.repoName,
-        tag: this.tag,
-      });
-      Logger.info(`Release found: ID ${response.data.id}`);
-      return response.data.id;
+      const data = await this.client.getReleaseByTag(this.owner, this.repoName, this.tag);
+      Logger.info(`Release found: ID ${data.id}`);
+      return data.id;
     } catch (err: unknown) {
       const httpError = err as { status?: number };
       if (httpError.status === 404) {
@@ -99,13 +87,9 @@ export class Release {
   private async generateReleaseNotes(): Promise<string> {
     try {
       Logger.info('Generating release notes...');
-      const notes = await this.octokit.rest.repos.generateReleaseNotes({
-        owner: this.owner,
-        repo: this.repoName,
-        tag_name: this.tag,
-      });
+      const data = await this.client.generateReleaseNotes(this.owner, this.repoName, this.tag);
       Logger.info('Release notes generated');
-      return notes.data.body;
+      return data.body;
     } catch {
       Logger.info('Could not generate release notes — using empty body');
       return '';
@@ -121,42 +105,30 @@ export class Release {
     Logger.info(`Uploading: ${name}`);
     Logger.info(`  File size: ${readFileSync(filePath).length} bytes`);
 
-    const assetsResponse = await this.octokit.rest.repos.listReleaseAssets({
-      owner: this.owner,
-      repo: this.repoName,
-      release_id: this.releaseId!,
-      per_page: 100,
-    });
+    const assets = await this.client.listReleaseAssets(this.owner, this.repoName, this.releaseId!);
 
-    const existing = assetsResponse.data.find((a) => a.name === name);
+    const existing = assets.find((a) => a.name === name);
     if (existing) {
       Logger.info(`  Duplicate found — deleting existing asset: ${name}`);
-      await this.octokit.rest.repos.deleteReleaseAsset({
-        owner: this.owner,
-        repo: this.repoName,
-        asset_id: existing.id,
-      });
+      await this.client.deleteReleaseAsset(this.owner, this.repoName, existing.id);
       Logger.info('  Deleted');
     }
 
     const content = readFileSync(filePath);
-    const response = await this.withRetry(() =>
-      this.octokit.rest.repos.uploadReleaseAsset({
-        owner: this.owner,
-        repo: this.repoName,
-        release_id: this.releaseId!,
+    const asset = await this.withRetry(() =>
+      this.client.uploadReleaseAsset(
+        this.owner,
+        this.repoName,
+        this.releaseId!,
         name,
-        data: content as unknown as string,
-        headers: {
-          'content-type': 'application/octet-stream',
-          'content-length': content.length,
-        },
-      }),
+        content,
+        'application/octet-stream',
+      ),
     );
 
-    const asset = response.data as unknown as Asset;
-    Logger.success(`Uploaded: ${name} → ${asset.browser_download_url}`);
-    return asset;
+    const assetResult = asset as unknown as Asset;
+    Logger.success(`Uploaded: ${name} → ${assetResult.browser_download_url}`);
+    return assetResult;
   }
 
   private async withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {

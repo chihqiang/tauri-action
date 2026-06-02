@@ -1,11 +1,11 @@
 import * as core from '@actions/core';
-import * as github from '@actions/github';
 import { Config } from './config';
 import { Builder } from './build';
 import { Release } from './release';
 import { Logger } from './log';
 import { Target } from './target';
 import { UpdaterGenerator } from './generate-updater';
+import { GitHubClient } from './github';
 
 export class Workflow {
   async runBuild(config: Config): Promise<void> {
@@ -31,8 +31,8 @@ export class Workflow {
     const [owner, repoName] = config.parseRepo();
     Logger.info(`Repository: ${owner}/${repoName}`);
     Logger.info(`Tag: ${config.tag}`);
-    const octokit = github.getOctokit(config.token);
-    const release = new Release(octokit, owner, repoName, config.tag);
+    const client = new GitHubClient(config.token);
+    const release = new Release(client, owner, repoName, config.tag);
     const releaseId = await release.ensureRelease(config.releaseBody);
     core.setOutput('releaseId', String(releaseId));
     Logger.info(`Set output releaseId=${releaseId}`);
@@ -75,13 +75,7 @@ export class Workflow {
     if (!config.tag) throw new Error('tag is required');
 
     Logger.step('Generating updater.json');
-    const generator = new UpdaterGenerator(config);
-    const { owner, repoName, octokit } = generator.createClient();
-    const release = await generator.fetchRelease(octokit, owner, repoName);
-    const assets = await generator.listAssets(octokit, owner, repoName, release.id);
-    const platforms = await generator.collectPlatforms(octokit, owner, repoName, assets);
-    const updaterContent = generator.buildUpdaterJson(platforms);
-    await generator.uploadUpdaterJson(octokit, owner, repoName, release.id, assets, updaterContent);
+    await new UpdaterGenerator(config).run();
     Logger.success('updater.json generated and uploaded');
     Logger.endGroup();
   }

@@ -23927,11 +23927,11 @@ var require_github = __commonJS({
     var Context = __importStar(require_context());
     var utils_1 = require_utils4();
     exports2.context = new Context.Context();
-    function getOctokit3(token, options, ...additionalPlugins) {
+    function getOctokit2(token, options, ...additionalPlugins) {
       const GitHubWithPlugins = utils_1.GitHub.plugin(...additionalPlugins);
       return new GitHubWithPlugins((0, utils_1.getOctokitOptions)(token, options));
     }
-    exports2.getOctokit = getOctokit3;
+    exports2.getOctokit = getOctokit2;
   }
 });
 
@@ -23996,7 +23996,6 @@ var Logger = class {
 
 // src/workflow.ts
 var core3 = __toESM(require_core());
-var github2 = __toESM(require_github());
 
 // src/build.ts
 var import_exec = __toESM(require_exec());
@@ -24298,9 +24297,9 @@ var Builder = class _Builder {
 var import_fs2 = require("fs");
 var import_path2 = require("path");
 var Release = class {
-  constructor(octokit, owner, repoName, tag) {
+  constructor(client, owner, repoName, tag) {
     this.releaseId = null;
-    this.octokit = octokit;
+    this.client = client;
     this.owner = owner;
     this.repoName = repoName;
     this.tag = tag;
@@ -24320,16 +24319,8 @@ var Release = class {
     } else {
       Logger.info("Using auto-generated release notes");
     }
-    const response = await this.octokit.rest.repos.createRelease({
-      owner: this.owner,
-      repo: this.repoName,
-      tag_name: this.tag,
-      name: this.tag,
-      body: releaseBody,
-      draft: false,
-      prerelease: false
-    });
-    this.releaseId = response.data.id;
+    const data = await this.client.createRelease(this.owner, this.repoName, this.tag, releaseBody);
+    this.releaseId = data.id;
     Logger.success(`Created release ID: ${this.releaseId}`);
     return this.releaseId;
   }
@@ -24353,13 +24344,9 @@ var Release = class {
   }
   async getReleaseByTag() {
     try {
-      const response = await this.octokit.rest.repos.getReleaseByTag({
-        owner: this.owner,
-        repo: this.repoName,
-        tag: this.tag
-      });
-      Logger.info(`Release found: ID ${response.data.id}`);
-      return response.data.id;
+      const data = await this.client.getReleaseByTag(this.owner, this.repoName, this.tag);
+      Logger.info(`Release found: ID ${data.id}`);
+      return data.id;
     } catch (err) {
       const httpError = err;
       if (httpError.status === 404) {
@@ -24372,13 +24359,9 @@ var Release = class {
   async generateReleaseNotes() {
     try {
       Logger.info("Generating release notes...");
-      const notes = await this.octokit.rest.repos.generateReleaseNotes({
-        owner: this.owner,
-        repo: this.repoName,
-        tag_name: this.tag
-      });
+      const data = await this.client.generateReleaseNotes(this.owner, this.repoName, this.tag);
       Logger.info("Release notes generated");
-      return notes.data.body;
+      return data.body;
     } catch {
       Logger.info("Could not generate release notes \u2014 using empty body");
       return "";
@@ -24391,39 +24374,27 @@ var Release = class {
     const name = (0, import_path2.basename)(filePath);
     Logger.info(`Uploading: ${name}`);
     Logger.info(`  File size: ${(0, import_fs2.readFileSync)(filePath).length} bytes`);
-    const assetsResponse = await this.octokit.rest.repos.listReleaseAssets({
-      owner: this.owner,
-      repo: this.repoName,
-      release_id: this.releaseId,
-      per_page: 100
-    });
-    const existing = assetsResponse.data.find((a) => a.name === name);
+    const assets = await this.client.listReleaseAssets(this.owner, this.repoName, this.releaseId);
+    const existing = assets.find((a) => a.name === name);
     if (existing) {
       Logger.info(`  Duplicate found \u2014 deleting existing asset: ${name}`);
-      await this.octokit.rest.repos.deleteReleaseAsset({
-        owner: this.owner,
-        repo: this.repoName,
-        asset_id: existing.id
-      });
+      await this.client.deleteReleaseAsset(this.owner, this.repoName, existing.id);
       Logger.info("  Deleted");
     }
     const content = (0, import_fs2.readFileSync)(filePath);
-    const response = await this.withRetry(
-      () => this.octokit.rest.repos.uploadReleaseAsset({
-        owner: this.owner,
-        repo: this.repoName,
-        release_id: this.releaseId,
+    const asset = await this.withRetry(
+      () => this.client.uploadReleaseAsset(
+        this.owner,
+        this.repoName,
+        this.releaseId,
         name,
-        data: content,
-        headers: {
-          "content-type": "application/octet-stream",
-          "content-length": content.length
-        }
-      })
+        content,
+        "application/octet-stream"
+      )
     );
-    const asset = response.data;
-    Logger.success(`Uploaded: ${name} \u2192 ${asset.browser_download_url}`);
-    return asset;
+    const assetResult = asset;
+    Logger.success(`Uploaded: ${name} \u2192 ${assetResult.browser_download_url}`);
+    return assetResult;
   }
   async withRetry(fn, maxRetries = 3) {
     let lastError;
@@ -24444,39 +24415,103 @@ var Release = class {
   }
 };
 
-// src/generate-updater.ts
+// src/github.ts
 var github = __toESM(require_github());
-var UpdaterGenerator = class {
-  constructor(config) {
-    this.config = config;
+var GitHubClient = class {
+  constructor(token) {
+    this.octokit = github.getOctokit(token);
   }
-  createClient() {
-    const [owner, repoName] = this.config.parseRepo();
-    const octokit = github.getOctokit(this.config.token);
-    return { owner, repoName, octokit };
+  getOctokit() {
+    return this.octokit;
   }
-  async fetchRelease(octokit, owner, repoName) {
-    Logger.info(`Fetching release for tag: ${this.config.tag}`);
-    const { data: release } = await octokit.rest.repos.getReleaseByTag({
+  async getReleaseByTag(owner, repo, tag) {
+    const { data } = await this.octokit.rest.repos.getReleaseByTag({ owner, repo, tag });
+    return data;
+  }
+  async listReleaseAssets(owner, repo, releaseId) {
+    const { data } = await this.octokit.rest.repos.listReleaseAssets({
       owner,
-      repo: repoName,
-      tag: this.config.tag
-    });
-    Logger.info(`Found release ID: ${release.id}`);
-    return release;
-  }
-  async listAssets(octokit, owner, repoName, releaseId) {
-    Logger.info("Listing release assets...");
-    const { data: assets } = await octokit.rest.repos.listReleaseAssets({
-      owner,
-      repo: repoName,
+      repo,
       release_id: releaseId,
       per_page: 100
     });
-    Logger.info(`Found ${assets.length} asset(s) total`);
-    return assets;
+    return data;
   }
-  async collectPlatforms(octokit, owner, repoName, assets) {
+  async getReleaseAsset(owner, repo, assetId) {
+    const response = await this.octokit.rest.repos.getReleaseAsset({
+      owner,
+      repo,
+      asset_id: assetId,
+      headers: { accept: "application/octet-stream" }
+    });
+    const raw = response.data;
+    if (raw instanceof ArrayBuffer) {
+      return Buffer.from(raw).toString("utf-8").trim();
+    }
+    if (Buffer.isBuffer(raw)) {
+      return raw.toString("utf-8").trim();
+    }
+    return String(raw).trim();
+  }
+  async deleteReleaseAsset(owner, repo, assetId) {
+    await this.octokit.rest.repos.deleteReleaseAsset({ owner, repo, asset_id: assetId });
+  }
+  async uploadReleaseAsset(owner, repo, releaseId, name, data, contentType) {
+    const { data: asset } = await this.octokit.rest.repos.uploadReleaseAsset({
+      owner,
+      repo,
+      release_id: releaseId,
+      name,
+      data,
+      headers: {
+        "content-type": contentType,
+        "content-length": data.length
+      }
+    });
+    return asset;
+  }
+  async createRelease(owner, repo, tag, body) {
+    const { data } = await this.octokit.rest.repos.createRelease({
+      owner,
+      repo,
+      tag_name: tag,
+      name: tag,
+      body,
+      draft: false,
+      prerelease: false
+    });
+    return data;
+  }
+  async generateReleaseNotes(owner, repo, tag) {
+    const { data } = await this.octokit.rest.repos.generateReleaseNotes({
+      owner,
+      repo,
+      tag_name: tag
+    });
+    return data;
+  }
+};
+
+// src/generate-updater.ts
+var UpdaterGenerator = class {
+  constructor(config) {
+    this.config = config;
+    this.client = new GitHubClient(config.token);
+    [this.owner, this.repoName] = config.parseRepo();
+  }
+  async run() {
+    Logger.info(`Fetching release for tag: ${this.config.tag}`);
+    const release = await this.client.getReleaseByTag(this.owner, this.repoName, this.config.tag);
+    Logger.info(`Found release ID: ${release.id}`);
+    Logger.info("Listing release assets...");
+    const assets = await this.client.listReleaseAssets(this.owner, this.repoName, release.id);
+    Logger.info(`Found ${assets.length} asset(s) total`);
+    const platforms = await this.collectPlatforms(assets);
+    const updaterContent = this.buildUpdaterJson(platforms);
+    await this.uploadUpdaterJson(release.id, assets, updaterContent);
+    Logger.success("updater.json generated and uploaded");
+  }
+  async collectPlatforms(assets) {
     const sigAssets = assets.filter((a) => a.name.endsWith(EXT.SIG));
     Logger.info(`Found ${sigAssets.length} ${EXT.SIG} file(s)`);
     const platforms = {};
@@ -24490,21 +24525,7 @@ var UpdaterGenerator = class {
       }
       Logger.info(`  \u21B3 Platform: ${platform}`);
       Logger.info(`  \u21B3 Downloading signature...`);
-      const sigResponse = await octokit.rest.repos.getReleaseAsset({
-        owner,
-        repo: repoName,
-        asset_id: sigAsset.id,
-        headers: { accept: "application/octet-stream" }
-      });
-      const raw = sigResponse.data;
-      let signature;
-      if (raw instanceof ArrayBuffer) {
-        signature = Buffer.from(raw).toString("utf-8").trim();
-      } else if (Buffer.isBuffer(raw)) {
-        signature = raw.toString("utf-8").trim();
-      } else {
-        signature = String(raw).trim();
-      }
+      const signature = await this.client.getReleaseAsset(this.owner, this.repoName, sigAsset.id);
       Logger.info(`  \u21B3 Signature length: ${signature.length} chars`);
       const downloadUrl = `https://github.com/${this.config.repo}/releases/latest/download/${encodeURIComponent(archiveName)}`;
       Logger.info(`  \u21B3 Download URL: ${downloadUrl}`);
@@ -24529,29 +24550,23 @@ var UpdaterGenerator = class {
 ${content}`);
     return content;
   }
-  async uploadUpdaterJson(octokit, owner, repoName, releaseId, assets, updaterContent) {
+  async uploadUpdaterJson(releaseId, assets, updaterContent) {
     Logger.info("Uploading updater.json to release...");
     const existingUpdater = assets.find((a) => a.name === "updater.json");
     if (existingUpdater) {
       Logger.info("Deleting existing updater.json...");
-      await octokit.rest.repos.deleteReleaseAsset({
-        owner,
-        repo: repoName,
-        asset_id: existingUpdater.id
-      });
+      await this.client.deleteReleaseAsset(this.owner, this.repoName, existingUpdater.id);
       Logger.info("Deleted");
     }
-    await octokit.rest.repos.uploadReleaseAsset({
-      owner,
-      repo: repoName,
-      release_id: releaseId,
-      name: "updater.json",
-      data: Buffer.from(updaterContent, "utf-8"),
-      headers: {
-        "content-type": "application/json",
-        "content-length": Buffer.byteLength(updaterContent, "utf-8")
-      }
-    });
+    const buffer = Buffer.from(updaterContent, "utf-8");
+    await this.client.uploadReleaseAsset(
+      this.owner,
+      this.repoName,
+      releaseId,
+      "updater.json",
+      buffer,
+      "application/json"
+    );
   }
   inferPlatform(assetName) {
     const lower = assetName.toLowerCase();
@@ -24590,8 +24605,8 @@ var Workflow = class {
     const [owner, repoName] = config.parseRepo();
     Logger.info(`Repository: ${owner}/${repoName}`);
     Logger.info(`Tag: ${config.tag}`);
-    const octokit = github2.getOctokit(config.token);
-    const release = new Release(octokit, owner, repoName, config.tag);
+    const client = new GitHubClient(config.token);
+    const release = new Release(client, owner, repoName, config.tag);
     const releaseId = await release.ensureRelease(config.releaseBody);
     core3.setOutput("releaseId", String(releaseId));
     Logger.info(`Set output releaseId=${releaseId}`);
@@ -24627,13 +24642,7 @@ var Workflow = class {
     if (!config.token) throw new Error("token is required");
     if (!config.tag) throw new Error("tag is required");
     Logger.step("Generating updater.json");
-    const generator = new UpdaterGenerator(config);
-    const { owner, repoName, octokit } = generator.createClient();
-    const release = await generator.fetchRelease(octokit, owner, repoName);
-    const assets = await generator.listAssets(octokit, owner, repoName, release.id);
-    const platforms = await generator.collectPlatforms(octokit, owner, repoName, assets);
-    const updaterContent = generator.buildUpdaterJson(platforms);
-    await generator.uploadUpdaterJson(octokit, owner, repoName, release.id, assets, updaterContent);
+    await new UpdaterGenerator(config).run();
     Logger.success("updater.json generated and uploaded");
     Logger.endGroup();
   }

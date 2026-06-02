@@ -1,15 +1,11 @@
-import * as github from '@actions/github';
 import { Config } from './config';
 import { Logger } from './log';
 import { PLATFORMS, ARCH, ARCH_ALIASES, EXT } from './target';
+import { GitHubClient } from './github';
 
 interface UpdaterPlatform {
   signature: string;
   url: string;
-}
-
-interface ReleaseInfo {
-  id: number;
 }
 
 interface ReleaseAsset {
@@ -18,52 +14,33 @@ interface ReleaseAsset {
 }
 
 export class UpdaterGenerator {
-  constructor(private config: Config) {}
+  private client: GitHubClient;
+  private owner: string;
+  private repoName: string;
 
-  createClient() {
-    const [owner, repoName] = this.config.parseRepo();
-    const octokit = github.getOctokit(this.config.token);
-    return { owner, repoName, octokit };
+  constructor(private config: Config) {
+    this.client = new GitHubClient(config.token);
+    [this.owner, this.repoName] = config.parseRepo();
   }
 
-  async fetchRelease(
-    octokit: ReturnType<typeof github.getOctokit>,
-    owner: string,
-    repoName: string,
-  ): Promise<ReleaseInfo> {
+  async run(): Promise<void> {
     Logger.info(`Fetching release for tag: ${this.config.tag}`);
-    const { data: release } = await octokit.rest.repos.getReleaseByTag({
-      owner,
-      repo: repoName,
-      tag: this.config.tag,
-    });
+    const release = await this.client.getReleaseByTag(this.owner, this.repoName, this.config.tag);
     Logger.info(`Found release ID: ${release.id}`);
-    return release;
-  }
 
-  async listAssets(
-    octokit: ReturnType<typeof github.getOctokit>,
-    owner: string,
-    repoName: string,
-    releaseId: number,
-  ): Promise<ReleaseAsset[]> {
     Logger.info('Listing release assets...');
-    const { data: assets } = await octokit.rest.repos.listReleaseAssets({
-      owner,
-      repo: repoName,
-      release_id: releaseId,
-      per_page: 100,
-    });
+    const assets = await this.client.listReleaseAssets(this.owner, this.repoName, release.id);
     Logger.info(`Found ${assets.length} asset(s) total`);
-    return assets;
+
+    const platforms = await this.collectPlatforms(assets);
+
+    const updaterContent = this.buildUpdaterJson(platforms);
+
+    await this.uploadUpdaterJson(release.id, assets, updaterContent);
+    Logger.success('updater.json generated and uploaded');
   }
 
-  async collectPlatforms(
-    octokit: ReturnType<typeof github.getOctokit>,
-    owner: string,
-    repoName: string,
-    assets: ReleaseAsset[],
-  ): Promise<Record<string, UpdaterPlatform>> {
+  private async collectPlatforms(assets: ReleaseAsset[]): Promise<Record<string, UpdaterPlatform>> {
     const sigAssets = assets.filter((a) => a.name.endsWith(EXT.SIG));
     Logger.info(`Found ${sigAssets.length} ${EXT.SIG} file(s)`);
 
@@ -81,21 +58,7 @@ export class UpdaterGenerator {
       Logger.info(`  ↳ Platform: ${platform}`);
 
       Logger.info(`  ↳ Downloading signature...`);
-      const sigResponse = await octokit.rest.repos.getReleaseAsset({
-        owner,
-        repo: repoName,
-        asset_id: sigAsset.id,
-        headers: { accept: 'application/octet-stream' },
-      });
-      const raw = sigResponse.data as unknown;
-      let signature: string;
-      if (raw instanceof ArrayBuffer) {
-        signature = Buffer.from(raw).toString('utf-8').trim();
-      } else if (Buffer.isBuffer(raw)) {
-        signature = raw.toString('utf-8').trim();
-      } else {
-        signature = String(raw).trim();
-      }
+      const signature = await this.client.getReleaseAsset(this.owner, this.repoName, sigAsset.id);
       Logger.info(`  ↳ Signature length: ${signature.length} chars`);
 
       const downloadUrl = `https://github.com/${this.config.repo}/releases/latest/download/${encodeURIComponent(archiveName)}`;
@@ -112,7 +75,7 @@ export class UpdaterGenerator {
     return platforms;
   }
 
-  buildUpdaterJson(platforms: Record<string, UpdaterPlatform>): string {
+  private buildUpdaterJson(platforms: Record<string, UpdaterPlatform>): string {
     const version = this.config.tag.replace(/^v/, '');
     const updater = {
       version,
@@ -125,10 +88,7 @@ export class UpdaterGenerator {
     return content;
   }
 
-  async uploadUpdaterJson(
-    octokit: ReturnType<typeof github.getOctokit>,
-    owner: string,
-    repoName: string,
+  private async uploadUpdaterJson(
     releaseId: number,
     assets: ReleaseAsset[],
     updaterContent: string,
@@ -138,25 +98,19 @@ export class UpdaterGenerator {
     const existingUpdater = assets.find((a) => a.name === 'updater.json');
     if (existingUpdater) {
       Logger.info('Deleting existing updater.json...');
-      await octokit.rest.repos.deleteReleaseAsset({
-        owner,
-        repo: repoName,
-        asset_id: existingUpdater.id,
-      });
+      await this.client.deleteReleaseAsset(this.owner, this.repoName, existingUpdater.id);
       Logger.info('Deleted');
     }
 
-    await octokit.rest.repos.uploadReleaseAsset({
-      owner,
-      repo: repoName,
-      release_id: releaseId,
-      name: 'updater.json',
-      data: Buffer.from(updaterContent, 'utf-8') as unknown as string,
-      headers: {
-        'content-type': 'application/json',
-        'content-length': Buffer.byteLength(updaterContent, 'utf-8'),
-      },
-    });
+    const buffer = Buffer.from(updaterContent, 'utf-8');
+    await this.client.uploadReleaseAsset(
+      this.owner,
+      this.repoName,
+      releaseId,
+      'updater.json',
+      buffer,
+      'application/json',
+    );
   }
 
   private inferPlatform(assetName: string): string | null {
